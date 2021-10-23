@@ -76,13 +76,12 @@ impl CommandMatchParser {
                 let rows: Option<u32> = sql_matches.value_of_t("rows").ok();
 
                 fetch_table(sql_exp, rows).await;
-           
             }
             &Some(("new", new_matches)) => match new_matches.subcommand() {
                 Some(("prog", prog_matches)) => {}
                 Some((_, _)) => {}
                 None => {}
-            }
+            },
             &Some((_, _)) => {}
             None => {}
         }
@@ -99,8 +98,6 @@ struct Columns {
     #[serde(rename = "dataSet")]
     data_set: DataSet,
 }
-
-
 
 #[derive(Debug, Deserialize)]
 struct Metadata {
@@ -130,50 +127,97 @@ struct XML {
     tableData: TableData,
 }
 async fn fetch_table(sql_exp: String, rows: Option<u32>) {
-
     let mut client = SAPClient::new(&String::from(
         "http://hamerpitk01.lej.it2-solutions.com:8000",
     ));
     let res = client.send(&FreeStyleConfig::new(sql_exp, rows)).await;
 
     let xml = res.text().await.unwrap();
-    let tab: TableData = quick_xml::de::from_str(&xml).unwrap();
+    let table_data: TableData = quick_xml::de::from_str(&xml).unwrap();
 
-    let mut data_fields: Vec<Vec<String>> = vec![];
-    let mut index: usize = 0;
+    let mut abap_table = ABAPTable::new(table_data);
 
-    let titles_strings: Vec<&String> = tab
-        .columns
-        .iter()
-        .map(|column: &Columns| &column.metadata.name)
-        .collect();
-    let titles: Vec<CellStruct> = titles_strings
-        .iter()
-        .map(|t: &&String| t.cell().bold(true))
-        .collect();
-    let len = 0..tab.columns[0].data_set.data.len();
-    loop {
-        let mut data_vec: Vec<String> = vec![];
+    abap_table.build();
+    abap_table.display();
 
-        for col in tab.columns.iter() {
-            let data = &col.data_set.data[index];
+}
 
-            data_vec.push(match &data {
-                Some(val) => String::from(val),
-                None => String::from(""),
-            });
+struct ABAPTable {
+    headers: Vec<CellStruct>,
+    data: Vec<Vec<String>>,
+    table_data: TableData, // table_data: TableData
+}
+
+impl ABAPTable {
+    pub fn new(table_data: TableData) -> ABAPTable {
+        ABAPTable {
+            headers: vec![],
+            data: vec![],
+            table_data,
         }
-        data_fields.push(data_vec);
-        if index == len.end - 1 {
-            break;
-        } else {
-            index = index + 1;
+      
+    }
+    pub fn build(&mut self) {
+        &self.extract_headers();
+
+        &self.extract_data();
+    }
+
+    fn extract_headers(&mut self) {
+        self.headers = self
+            .table_data
+            .columns
+            .iter()
+            .map(|column: &Columns| &column.metadata.name)
+            .map(|t: &String| t.cell().bold(true))
+            .collect();
+    }
+
+    fn extract_data(&mut self) {
+        let len = 0..self.table_data.columns[0].data_set.data.len();
+
+        // let columns: Vec<Vec<String>> = self
+        //     .table_data
+        //     .columns
+        //     .iter()
+        //     .map(|c| c.data_set.data.iter().map(|d| d.as_ref().unwrap_or(&String::from("")).to_owned()).collect::<Vec<String>>())
+        //     .collect();
+
+        let mut i: usize = 0;
+        let mut data: Vec<Vec<String>> = vec![];
+
+        loop {
+            let mut data_vec: Vec<String> = vec![];
+
+            for col in self.table_data.columns.iter() {
+                let data = &col.data_set.data[i];
+
+                data_vec.push(Self::option_to_string(data));
+            }
+
+            
+            if i == len.end {
+                break;
+            } else {
+                i = i + 1;
+                data.push(data_vec);
+            }
+        }
+        self.data = data;
+    }
+
+    fn option_to_string(option: &Option<String>) -> String {
+        match option{
+            Some(val) => val.to_string(),
+            None => String::from("")
         }
     }
 
-    let table = data_fields.table().title(titles);
-    print_stdout(table);
+    pub fn display(self) {
+        print_stdout(self.data.table().title(self.headers));
+    }
 }
+
 struct SAPClient {
     client: Client,
 
