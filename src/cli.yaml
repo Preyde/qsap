@@ -1,0 +1,58 @@
+name: myapp
+version: "1.0"
+author: Kevin K. <kbknapp@gmail.com>
+about: Does awesome things
+args:
+    - config:
+        short: c
+        long: config
+        value_name: FILE
+        about: Sets a custom config file
+        takes_value: true
+    - INPUT:
+        about: Sets the input file to use
+        required: false
+        index: 1
+    - verbose:
+        short: v
+        multiple_occurrences: true
+        about: Sets the level of verbosity
+subcommands:
+    - table:
+        about: controls testing features
+        version: "1.3"
+        author: Someone E. <someone_else@other.com>
+        args:
+          - name:
+              about: Name of database table
+              required: true
+              takes_value: true
+          - rows:
+              short: r
+              long: rows
+              about: Amount of rows to fetch
+              takes_value: true
+    - new:
+        about: Create new development object
+        version: "1.3"
+        author: Someone E. <someone_else@other.com>
+        subcommands:
+          - prog:
+              about: Create new program
+              version: "1.3"
+              author: Someone E. <someone_else@other.com>
+              args:
+                - name:
+                    about: Name of program
+                    required: true
+                    takes_value: true
+    - sql:
+        args:
+          - sql_exp:
+              takes_value: true
+              required: true
+          - row-number:
+              short: r
+              long: row-number
+              takes_value: true
+            

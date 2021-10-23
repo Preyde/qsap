@@ -1,0 +1,19 @@
+[package]
+name = "sapClient"
+version = "0.1.0"
+edition = "2018"
+
+[lib]
+name = "sap_adt_bindings"
+path = "src/lib.rs"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+reqwest = { version = "0.11.5", features = ["cookies"] }
+tokio = { version = "1.12.0", features = ["full"] }
+cli-table = "0.4"
+quick-xml = { version = "0.22.0", features = ["serde", "serialize"] }
+minidom = "0.13.0"
+serde = { version = "1.0", features = [ "derive" ] }
+clap = { version = "3.0.0-beta.5", features = ["yaml"] }
+
