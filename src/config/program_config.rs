@@ -9,12 +9,17 @@ pub struct ProgramConfig {
 }
 
 impl ProgramConfig {
-    pub fn new(prog_name: &String) -> Self {
+    pub fn new(prog_name: &str, package_name: &str, transport_request: &str) -> Self {
         ProgramConfig {
-            path: String::from("/sap/bc/adt/programs/programs?corrNr=ITKK901409&sap-client=300"),
+            //ITKK901409
+            path: format!(
+                "/sap/bc/adt/programs/programs?corrNr={0}&sap-client=300",
+                transport_request
+            ),
             body: format!(
-                r#"<?xml version="1.0" encoding="UTF-8"?><program:abapProgram xmlns:program="http://www.sap.com/adt/programs/programs" xmlns:adtcore="http://www.sap.com/adt/core" adtcore:description="Von Programm erstellt" adtcore:language="DE" adtcore:name="{program_name}" adtcore:type="PROG/P" adtcore:masterLanguage="DE" adtcore:masterSystem="ITK" adtcore:responsible="PFRANK">  <adtcore:packageRef adtcore:name="Z_PFRANK"/></program:abapProgram>"#,
-                program_name = prog_name
+                r#"<?xml version="1.0" encoding="UTF-8"?><program:abapProgram xmlns:program="http://www.sap.com/adt/programs/programs" xmlns:adtcore="http://www.sap.com/adt/core" adtcore:description="Von Programm erstellt" adtcore:language="DE" adtcore:name="{program_name}" adtcore:type="PROG/P" adtcore:masterLanguage="DE" adtcore:masterSystem="ITK" adtcore:responsible="PFRANK">  <adtcore:packageRef adtcore:name="{package_name}"/></program:abapProgram>"#,
+                program_name = prog_name,
+                package_name = package_name
             ),
         }
     }
