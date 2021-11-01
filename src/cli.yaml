@@ -32,6 +32,12 @@ subcommands:
               long: rows
               about: Amount of rows to fetch
               takes_value: true
+          - out:
+                short: o
+                long: out
+                about: Filepath to save CSV
+                takes_value: true
+                required: false
     - new:
         about: Create new development object
         version: "1.3"
@@ -42,6 +48,16 @@ subcommands:
               version: "1.3"
               author: Someone E. <someone_else@other.com>
               args:
+                - transport:
+                    about: Transportauftrag
+                    required: false
+                    takes_value: true
+                    short: t
+                - package:
+                    about: Paket
+                    required: true
+                    takes_value: true
+                    short: p
                 - name:
                     about: Name of program
                     required: true
