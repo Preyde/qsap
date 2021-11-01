@@ -1,17 +1,20 @@
-extern crate clap;
+use std::collections::hash_map::RandomState;
+use std::collections::HashMap;
+use std::process::exit;
+use std::slice::SliceIndex;
+use std::str::FromStr;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use clap::{load_yaml, App, AppSettings, ArgMatches, Parser};
-use std::fmt::Result;
-use std::future::Future;
-
-use clap::{value_t, Arg, Values};
-use cli_table::{format::Justify, print_stdout, Cell, CellStruct, Row, Style, Table};
-use minidom;
+use chrono::{DateTime, Utc};
+use clap::{load_yaml, App, ArgMatches, Parser};
+use cli_table::{print_stdout, Cell, Style, Table};
+use csv::WriterBuilder;
+use ini::configparser::ini::Ini;
 use quick_xml;
-use reqwest::header::HeaderValue;
-use reqwest::Error;
+use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 use reqwest::{self, Client, Response};
 use sap_adt_bindings::config::program_config::{Config, FreeStyleConfig, ProgramConfig};
+use sap_adt_bindings::sap_client::{SAPClient, Session};
 use serde::Deserialize;
 use tokio;
 
@@ -68,17 +71,25 @@ impl CommandMatchParser {
             &Some(("table", table_matches)) => {
                 let tab_name = table_matches.value_of("name").unwrap();
                 let rows: Option<u32> = table_matches.value_of_t("rows").ok();
+                let path = table_matches.value_of("out");
 
-                fetch_table(format!("SELECT * FROM {0}", tab_name), rows).await;
+                fetch_table(format!("SELECT * FROM {0}", tab_name), rows, path).await;
             }
             &Some(("sql", sql_matches)) => {
                 let sql_exp = sql_matches.value_of_t("sql_exp").unwrap();
                 let rows: Option<u32> = sql_matches.value_of_t("rows").ok();
 
-                fetch_table(sql_exp, rows).await;
+                fetch_table(sql_exp, rows, None).await;
             }
             &Some(("new", new_matches)) => match new_matches.subcommand() {
-                Some(("prog", prog_matches)) => {}
+                Some(("prog", prog_matches)) => {
+                    let prog_name = prog_matches.value_of_t("name").unwrap();
+                    let package_name: String = prog_matches.value_of_t("package").unwrap();
+                    let transport_request: String = prog_matches.value_of_t("transport").unwrap();
+
+                    create_program(&prog_name, &package_name, &transport_request).await;
+                }
+
                 Some((_, _)) => {}
                 None => {}
             },
@@ -126,10 +137,24 @@ struct TableData {
 struct XML {
     tableData: TableData,
 }
-async fn fetch_table(sql_exp: String, rows: Option<u32>) {
-    let mut client = SAPClient::new(&String::from(
-        "http://hamerpitk01.lej.it2-solutions.com:8000",
-    ));
+async fn fetch_table(
+    sql_exp: String,
+    rows: Option<u32>,
+    path: Option<&str>,
+) -> core::result::Result<(), csv::Error> {
+    let mut app_conf = AppConfig::init();
+    let mut client: SAPClient;
+    let host = "http://hamerpitk01.lej.it2-solutions.com:8000";
+    let update_session_file: bool;
+
+    if let Some(session) = app_conf.get_session_from_sys("ITK") {
+        client = SAPClient::from_session(host, session);
+        update_session_file = false;
+    } else {
+        client = SAPClient::new(&String::from(host));
+        update_session_file = true;
+    }
+
     let res = client.send(&FreeStyleConfig::new(sql_exp, rows)).await;
 
     let xml = res.text().await.unwrap();
@@ -138,14 +163,41 @@ async fn fetch_table(sql_exp: String, rows: Option<u32>) {
     let mut abap_table = ABAPTable::new(table_data);
 
     abap_table.build();
-    abap_table.display();
 
+    if path.is_some() {
+        let mut writer = WriterBuilder::new()
+            .delimiter(b';')
+            .from_path(path.unwrap())
+            .unwrap();
+
+        println!("{0}", path.unwrap());
+
+        let headers = abap_table.get_headers();
+        let borrowed_headers: Vec<&String> = headers.iter().map(|s| s).collect();
+        writer.write_record(borrowed_headers)?;
+        let data = abap_table.get_data();
+        let mut iter = data.iter();
+
+        while let Some(v) = iter.next() {
+            let new_v: Vec<&String> = v.iter().map(|s| s).collect();
+
+            writer.write_record(&new_v)?;
+
+            writer.flush()?;
+        }
+    }
+    abap_table.display();
+    if update_session_file {
+        app_conf.set_session_for_sys("ITK", &client.get_session().unwrap());
+        app_conf.update_file();
+    }
+    Ok(())
 }
 
 struct ABAPTable {
-    headers: Vec<CellStruct>,
+    headers: Vec<String>,
     data: Vec<Vec<String>>,
-    table_data: TableData, // table_data: TableData
+    table_data: TableData,
 }
 
 impl ABAPTable {
@@ -155,33 +207,27 @@ impl ABAPTable {
             data: vec![],
             table_data,
         }
-      
     }
     pub fn build(&mut self) {
         &self.extract_headers();
 
         &self.extract_data();
     }
-
+    fn get_headers(&self) -> Vec<String> {
+        self.headers.to_owned()
+    }
     fn extract_headers(&mut self) {
         self.headers = self
             .table_data
             .columns
             .iter()
-            .map(|column: &Columns| &column.metadata.name)
-            .map(|t: &String| t.cell().bold(true))
+            .map(|column: &Columns| String::from(&column.metadata.name))
+            // .map(|t: &String| t.cell().bold(true))
             .collect();
     }
 
     fn extract_data(&mut self) {
         let len = 0..self.table_data.columns[0].data_set.data.len();
-
-        // let columns: Vec<Vec<String>> = self
-        //     .table_data
-        //     .columns
-        //     .iter()
-        //     .map(|c| c.data_set.data.iter().map(|d| d.as_ref().unwrap_or(&String::from("")).to_owned()).collect::<Vec<String>>())
-        //     .collect();
 
         let mut i: usize = 0;
         let mut data: Vec<Vec<String>> = vec![];
@@ -195,8 +241,7 @@ impl ABAPTable {
                 data_vec.push(Self::option_to_string(data));
             }
 
-            
-            if i == len.end {
+            if i == len.end - 1 {
                 break;
             } else {
                 i = i + 1;
@@ -207,93 +252,91 @@ impl ABAPTable {
     }
 
     fn option_to_string(option: &Option<String>) -> String {
-        match option{
+        match option {
             Some(val) => val.to_string(),
-            None => String::from("")
+            None => String::from(""),
         }
+    }
+
+    pub fn get_data(&self) -> Vec<Vec<String>> {
+        self.data.to_owned()
     }
 
     pub fn display(self) {
-        print_stdout(self.data.table().title(self.headers));
+        print_stdout(
+            self.data
+                .table()
+                .title(self.headers.iter().map(|t: &String| t.cell().bold(true))),
+        );
     }
 }
 
-struct SAPClient {
-    client: Client,
-
-    csrf_token: Option<HeaderValue>,
-    host: String,
+struct AppConfig {
+    config: Ini,
 }
 
-impl SAPClient {
-    fn new(host: &String) -> SAPClient {
-        SAPClient {
-            client: reqwest::Client::builder()
-                .cookie_store(true)
-                .build()
-                .unwrap(),
-            host: host.to_string(),
-            csrf_token: None,
-        }
-    }
-
-    async fn fetch_csrf_token(&mut self) {
-        let res = &self
-            .client
-            .get(format!(
-                "{}{}",
-                &self.host, "/sap/bc/adt/programs?sap-client=300"
-            ))
-            .basic_auth("pfrank", Some("Start123!"))
-            .header("x-csrf-token", "Fetch")
-            .send()
-            .await
-            .unwrap();
-
-        self.csrf_token = Some(res.headers().get("x-csrf-token").unwrap().clone());
-    }
-
-    async fn send(&mut self, config: &impl Config) -> Response {
-        if self.csrf_token.is_none() {
-            self.fetch_csrf_token().await;
+impl AppConfig {
+    pub fn init() -> Self {
+        let mut conf = AppConfig { config: Ini::new() };
+        if conf.config.load("sapClient.ini").is_err() {
+            std::fs::File::create("sapClient.ini");
         }
 
-        let url = format!("{0}{1}", &self.host, &config.get_path());
-
-        self.client
-            .post(&url)
-            .basic_auth("pfrank", Some("Start123!"))
-            .header("x-csrf-token", self.csrf_token.as_ref().unwrap())
-            .body(String::from(config.get_body()))
-            .send()
-            .await
-            .unwrap()
+        conf
     }
+    pub fn get_session_from_sys(&mut self, sys_id: &str) -> Option<Session> {
+        let section = format!("session_{0}", sys_id);
+        let expires_string = self.config.get(&section, "expires")?;
+        let expires: DateTime<Utc> = DateTime::from_str(&expires_string).ok()?;
 
-    async fn get<T: Config>(&mut self, config: T) -> Response {
-        if self.csrf_token.is_none() {
-            self.fetch_csrf_token().await;
+        if expires - Utc::now() <= chrono::Duration::zero() {
+            // Session is over
+            return None;
         }
 
-        let url = format!("{0}{1}", &self.host, &config.get_path());
+        Some(Session {
+            csrf_token: self.config.get(&section, "csrf_token")?,
+            session_cookie: self.config.get(&section, "session_cookie")?,
+        })
+    }
+    pub fn set_session_for_sys(&mut self, sys_id: &str, session: &Session) {
+        let section = format!("session_{0}", sys_id);
+        self.config
+            .set(&section, "csrf_token", Some(session.csrf_token.clone()));
+        self.config.set(
+            &section,
+            "session_cookie",
+            Some(session.session_cookie.clone()),
+        );
+        self.config.set(
+            &section,
+            "expires",
+            Some(
+                Utc::now()
+                    .checked_add_signed(chrono::Duration::minutes(15))
+                    .unwrap()
+                    .to_string(),
+            ),
+        );
+    }
 
-        self.client
-            .get(&url)
-            .basic_auth("pfrank", Some("Start123!"))
-            .header("x-csrf-token", self.csrf_token.as_ref().unwrap())
-            .body(String::from(config.get_body()))
-            .send()
-            .await
-            .unwrap()
+    pub fn update_file(&mut self) {
+        self.config.write("sapClient.ini");
     }
 }
 
-async fn create_program(prog_name: &String) {
+async fn create_program(prog_name: &String, package_nam: &str, transport_request: &str) {
     let mut client = SAPClient::new(&String::from(
         "http://hamerpitk01.lej.it2-solutions.com:8000",
     ));
 
-    let res = client.send(&ProgramConfig::new(&prog_name)).await;
+    let res = client
+        .send(&ProgramConfig::new(
+            &prog_name,
+            package_nam,
+            transport_request,
+        ))
+        .await;
 
     let status = res.status();
     let text = res.text().await.unwrap();
