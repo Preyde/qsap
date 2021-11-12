@@ -23,6 +23,7 @@ impl ABAPTable {
     pub fn get_headers(&self) -> Vec<String> {
         self.headers.to_owned()
     }
+
     fn extract_headers(&mut self) {
         self.headers = self
             .table_data

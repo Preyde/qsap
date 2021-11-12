@@ -1,20 +1,28 @@
 use chrono::{DateTime, Utc};
 use ini::configparser::ini::Ini;
 use sap_adt_bindings::net::Session;
+use serde::Deserialize;
+use serde_json::from_str;
+use std::collections::HashMap;
+use std::fs::read_to_string;
 use std::str::FromStr;
-
 pub mod app_config {}
 
 pub struct AppConfig {
     config: Ini,
+    destinations: Vec<Destination>,
 }
 impl AppConfig {
     pub fn init() -> Self {
-        let mut conf = AppConfig { config: Ini::new() };
+        let mut conf = AppConfig {
+            config: Ini::new(),
+            destinations: vec![],
+        };
         if conf.config.load("sapClient.ini").is_err() {
             std::fs::File::create("sapClient.ini");
         }
 
+        conf.read_destination_file();
         conf
     }
     pub fn get_session_from_sys(&mut self, sys_id: &str) -> Option<Session> {
@@ -30,6 +38,7 @@ impl AppConfig {
         Some(Session {
             csrf_token: self.config.get(&section, "csrf_token")?,
             session_cookie: self.config.get(&section, "session_cookie")?,
+            session_type: "stateless".to_string(),
         })
     }
     pub fn set_session_for_sys(&mut self, sys_id: &str, session: &Session) {
@@ -56,4 +65,23 @@ impl AppConfig {
     pub fn update_file(&mut self) {
         self.config.write("sapClient.ini");
     }
+    pub fn get_destination_from_sys(&mut self, sys_id: &str) -> Option<&Destination> {
+        self.destinations.iter().find(|dest| dest.sys_id == sys_id)
+    }
+    fn read_destination_file(&mut self) {
+        self.destinations = from_str(
+            &read_to_string(r#"C:\Users\103925pafr\Projekte\sapClient\destinations.json"#).unwrap(),
+        )
+        .unwrap()
+    }
+}
+#[derive(Debug, Deserialize)]
+pub struct Destination {
+    sys_id: String,
+    host: String,
+    port: u16,
+    uname: String,
+    passwd: String,
+    mandt: String,
+    lang: String,
 }
