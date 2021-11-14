@@ -1,43 +1,57 @@
 // use crate::config::Sendable;
 use crate::config::{AdtError, AdtResponse, Config, LockHandle, Responses, SendableConfig};
 use reqwest::{header::HeaderMap, Client, Response};
-use std::collections::HashMap;
+use serde::Deserialize;
+use std::{collections::HashMap, fmt::Display};
 #[derive(Debug)]
 pub struct Session {
     pub csrf_token: String,
     pub session_cookie: String,
     pub session_type: String,
 }
-
+#[derive(Debug, Deserialize, Clone)]
+pub struct Destination {
+    pub sys_id: String,
+    pub host: String,
+    pub port: u16,
+    pub uname: String,
+    pub passwd: String,
+    pub mandt: String,
+    pub lang: String,
+}
 pub struct SAPClient {
     client: Client,
     headers: Option<HashMap<String, Option<String>>>,
     session: Option<Session>,
     host: String,
+    // host: String,
     stateful: bool,
+    dest: Destination,
     // app_config: AppConfig,
     cookies: HashMap<String, String>,
 }
 
 impl SAPClient {
-    pub fn new(host: &str) -> SAPClient {
+    pub fn new(dest: &Destination) -> SAPClient {
         // let mut app_conf = AppConfig::init();
         SAPClient {
             client: reqwest::Client::builder()
                 .cookie_store(true)
                 .build()
                 .unwrap(),
-            host: host.to_string(),
+            dest: dest.clone(),
             headers: None,
             session: None,
             cookies: HashMap::new(),
             stateful: false, // app_config: app_conf,
+            host: format!("{}:{}", dest.host, dest.port),
         }
     }
+
     pub fn set_stateful(&mut self, stateful: bool) {
         self.stateful = stateful;
     }
-    pub fn from_session(host: &str, session: Session) -> Self {
+    pub fn from_session(dest: &Destination, session: Session) -> Self {
         SAPClient {
             // app_config: AppConfig::init(),
             client: reqwest::Client::builder()
@@ -46,9 +60,10 @@ impl SAPClient {
                 .unwrap(),
             cookies: HashMap::new(),
             session: Some(session),
-            host: host.to_string(),
+            dest: dest.clone(),
             headers: None,
             stateful: false,
+            host: format!("{}:{}", dest.host, dest.port),
         }
     }
 

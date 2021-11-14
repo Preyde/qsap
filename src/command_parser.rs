@@ -105,17 +105,17 @@ impl CommandMatchParser {
 }
 // trait NewTrait: Config + SendWith {}
 
-enum CommandMatchOutput {
-    FreeStyle(FreeStyleConfig),
-    ProgramCreate(ConfigCreateProgram),
-    ClassCreate(ClassConfig),
-}
+// enum CommandMatchOutput {
+//     FreeStyle(FreeStyleConfig),
+//     ProgramCreate(ConfigCreateProgram),
+//     ClassCreate(ClassConfig),
+// }
 
-enum Commands {
-    TableCommand(FreeStyleConfig),
-    ProgramCommand(ConfigCreateProgram),
-    ClassCommand(ClassConfig),
-}
+// enum Commands {
+//     TableCommand(FreeStyleConfig),
+//     ProgramCommand(ConfigCreateProgram),
+//     ClassCommand(ClassConfig),
+// }
 
 // impl CommandParser for CommandMatchParser {
 //     fn parse(args: &ArgMatches) -> C {}

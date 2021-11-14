@@ -1,7 +1,10 @@
+use std::env;
+
 use crate::command_parser::CommandMatchParser;
 use crate::output_handler::{handle_error, handle_output};
 use app_config::AppConfig;
 use clap::{load_yaml, App};
+
 use sap_adt_bindings::net::SAPClient;
 pub mod app_config;
 pub mod command_parser;
@@ -17,14 +20,16 @@ async fn main() {
     let mut app_conf = AppConfig::init();
     let mut client: SAPClient;
 
-    let host = "http://hamerpitk01.lej.it2-solutions.com:8000";
+    // let host = env::var("DEFAULT").unwrap();
+    // let host = "http://hamerpitk01.lej.it2-solutions.com:8000";
+    let dest = app_conf.get_default_destination();
     let update_session_file: bool;
-
-    if let Some(session) = app_conf.get_session_from_sys("ITK") {
-        client = SAPClient::from_session(host, session);
+    println!("{:?}", dest);
+    if let Some(session) = app_conf.get_session_from_sys(&dest.sys_id) {
+        client = SAPClient::from_session(&dest, session);
         update_session_file = false;
     } else {
-        client = SAPClient::new(&String::from(host));
+        client = SAPClient::new(&dest);
         update_session_file = true;
     }
 
