@@ -4,21 +4,35 @@ use serde::Deserialize;
 pub struct ABAPTable {
     headers: Vec<String>,
     data: Vec<Vec<String>>,
-    table_data: TableData,
+    table_data: Option<TableData>,
 }
+
+impl Clone for ABAPTable {
+    fn clone(&self) -> Self {
+        ABAPTable {
+            data: self.data.clone(),
+            headers: self.headers.clone(),
+            table_data: None,
+        }
+    }
+}
+// impl Copy for ABAPTable {}
 
 impl ABAPTable {
     pub fn new(table_data: TableData) -> ABAPTable {
         ABAPTable {
             headers: vec![],
             data: vec![],
-            table_data,
+            table_data: Some(table_data),
         }
     }
     pub fn build(&mut self) {
-        self.extract_headers();
-
-        self.extract_data();
+        if self.headers.is_empty() {
+            self.extract_headers();
+        }
+        if self.data.is_empty() {
+            self.extract_data();
+        }
     }
     pub fn get_headers(&self) -> Vec<String> {
         self.headers.to_owned()
@@ -27,6 +41,8 @@ impl ABAPTable {
     fn extract_headers(&mut self) {
         self.headers = self
             .table_data
+            .as_ref()
+            .unwrap()
             .columns
             .iter()
             .map(|column: &Columns| String::from(&column.metadata.name))
@@ -35,7 +51,10 @@ impl ABAPTable {
     }
 
     fn extract_data(&mut self) {
-        let len = 0..self.table_data.columns[0].data_set.data.len();
+        let len = 0..self.table_data.as_ref().unwrap().columns[0]
+            .data_set
+            .data
+            .len();
 
         let mut i: usize = 0;
         let mut data: Vec<Vec<String>> = vec![];
@@ -43,7 +62,7 @@ impl ABAPTable {
         loop {
             let mut data_vec: Vec<String> = vec![];
 
-            for col in self.table_data.columns.iter() {
+            for col in self.table_data.as_ref().unwrap().columns.iter() {
                 let data = &col.data_set.data[i];
 
                 data_vec.push(Self::option_to_string(data));

@@ -1,34 +1,18 @@
-use super::{AdtError, AdtResponse, Config, Responses, SAPClient};
+use super::{AdtError, Config, Responses, SAPClient, SendableConfig};
 use crate::config::Sendable;
 use crate::data::abap_table::{ABAPTable, TableData};
 use async_trait::async_trait;
-use reqwest::Response;
 pub struct FreeStyleConfig {
     body: String,
     path: String,
+    table: Option<ABAPTable>,
 }
 
 pub struct FreeStyleResponse {
-    table: ABAPTable,
+    table: Option<ABAPTable>,
 }
 
-impl AdtResponse for FreeStyleResponse {
-    fn get_data(self) -> Responses {
-        Responses::FreeStyle(self.table)
-    }
-}
-// impl AdtResponse<ABAPTable> for FreeStyleResponse {
-//     fn get_data(&self) -> ABAPTable {
-//         self.table
-//     }
-// }
 pub struct FreeStyleError {}
-impl AdtError for FreeStyleError {}
-// impl FreeStyleResponse {
-//     fn get_table(&self) -> ABAPTable {
-//         self.table
-//     }
-// }
 
 impl FreeStyleConfig {
     pub fn new(sql_exp: String, row_number: Option<u32>) -> Self {
@@ -38,10 +22,11 @@ impl FreeStyleConfig {
                 "/sap/bc/adt/datapreview/freestyle?rowNumber={row_number}&sap-client=300",
                 row_number = row_number.unwrap_or(5)
             ),
+            table: None,
         }
     }
 }
-#[async_trait]
+
 impl Config for FreeStyleConfig {
     fn get_body(&self) -> String {
         self.body.clone()
@@ -50,32 +35,31 @@ impl Config for FreeStyleConfig {
         self.path.clone()
     }
 }
-
 #[async_trait]
-impl Sendable<FreeStyleResponse, FreeStyleError> for FreeStyleConfig {
-    async fn send_with(
-        &mut self,
-        client: &mut SAPClient,
-    ) -> Result<FreeStyleResponse, FreeStyleError> {
+impl Sendable for FreeStyleConfig {
+    async fn send_with(&mut self, client: &mut SAPClient) -> Result<(), AdtError> {
         let res = client.send(self).await;
 
         let xml = res.text().await.unwrap();
-        let table_data: TableData = quick_xml::de::from_str(&xml).unwrap();
+
+        let table_data: TableData = match quick_xml::de::from_str(&xml) {
+            Ok(data) => data,
+            Err(_e) => return Err(AdtError::new("Table does not exist")),
+        };
 
         let mut abap_table = ABAPTable::new(table_data);
 
         abap_table.build();
-
-        let response = crate::config::FreeStyleResponse { table: abap_table };
-        Ok(response)
+        self.table = Some(abap_table);
+        Ok(())
+        // Ok(abap_table)
+    }
+    fn get_response(&self) -> Option<Responses> {
+        match self.table.clone() {
+            Some(t) => Some(Responses::FreeStyle(t)),
+            None => None,
+        }
     }
 }
-// impl Into<Config> for FreeStyleConfig {
-//     fn into(self) -> Config {
-//         Config {}
-//     }
-// }
-// #[async_trait]
-// impl SendWith for FreeStyleConfig {
 
-// }
+impl SendableConfig for FreeStyleConfig {}

@@ -1,5 +1,9 @@
-use super::{AdtError, AdtResponse, Config, LockHandle, Responses, SAPClient};
-use crate::config::Sendable;
+use std::fmt::Error;
+
+use super::{
+    AdtError, AdtResponse, Config, LockHandle, Responses, SAPClient, Sendable, SendableConfig,
+};
+// use crate::config::Sendable;
 use async_trait::async_trait;
 use serde::Deserialize;
 // pub trait Config {
@@ -32,10 +36,10 @@ struct LockHandleResponse {
 // }
 impl AdtResponse for ProgramResponse {
     fn get_data(self) -> Responses {
-        Responses::Program(())
+        Responses::Program(String::from(""))
     }
 }
-impl AdtError for ProgramError {}
+// impl AdtError for ProgramError {}
 // pub trait DeleteConfig<T>
 // where
 //     T: Config,
@@ -294,7 +298,7 @@ impl ConfigCopyProgram {
 //         client.send(self).await
 //     }
 // }
-#[async_trait]
+
 impl Config for ConfigDeleteProgram {
     fn get_body(&self) -> String {
         self.body.clone()
@@ -307,6 +311,7 @@ impl Config for ConfigDeleteProgram {
             self.lock_handle.as_ref().unwrap()
         )
     }
+
     // async fn send_with(
     //     &mut self,
     //     client: &mut super::SAPClient,
@@ -325,8 +330,8 @@ impl Config for ConfigDeleteProgram {
     // }
 }
 #[async_trait]
-impl Sendable<ProgramResponse, ProgramError> for ConfigDeleteProgram {
-    async fn send_with(&mut self, client: &mut SAPClient) -> Result<ProgramResponse, ProgramError> {
+impl Sendable for ConfigDeleteProgram {
+    async fn send_with(&mut self, client: &mut SAPClient) -> Result<(), AdtError> {
         let lock_handle_res = client.send(self).await;
 
         let xml = lock_handle_res.text().await.unwrap();
@@ -337,24 +342,43 @@ impl Sendable<ProgramResponse, ProgramError> for ConfigDeleteProgram {
 
         client.delete(self).await;
 
-        Ok(ProgramResponse {})
+        Ok(())
+    }
+    fn get_response(&self) -> Option<Responses> {
+        Some(Responses::Program(String::from("")))
     }
 }
-#[async_trait]
-impl Sendable<ProgramResponse, ProgramError> for ConfigCreateProgram {
-    async fn send_with(&mut self, client: &mut SAPClient) -> Result<ProgramResponse, ProgramError> {
-        client.send(self).await;
-        Ok(ProgramResponse {})
-    }
-}
-#[async_trait]
-impl Sendable<ProgramResponse, ProgramError> for ConfigCopyProgram {
-    async fn send_with(&mut self, client: &mut SAPClient) -> Result<ProgramResponse, ProgramError> {
-        client.send(self).await;
-        Ok(ProgramResponse {})
-    }
-}
-#[async_trait]
+// #[async_trait]
+// impl Sendable<ProgramResponse, ProgramError> for ConfigDeleteProgram {
+//     async fn send_with(&mut self, client: &mut SAPClient) -> Result<ProgramResponse, ProgramError> {
+//         let lock_handle_res = client.send(self).await;
+
+//         let xml = lock_handle_res.text().await.unwrap();
+//         // println!("{:?}", &xml);
+//         let lock_handle: LockHandleResponse = quick_xml::de::from_str(&xml).unwrap();
+
+//         self.lock_handle = Some(lock_handle.values.DATA.LOCK_HANDLE);
+
+//         client.delete(self).await;
+
+//         Ok(ProgramResponse {})
+//     }
+// // }
+// #[async_trait]
+// impl Sendable<ProgramResponse, ProgramError> for ConfigCreateProgram {
+//     async fn send_with(&mut self, client: &mut SAPClient) -> Result<ProgramResponse, ProgramError> {
+//         client.send(self).await;
+//         Ok(ProgramResponse {})
+//     }
+// }
+// #[async_trait]
+// impl Sendable<ProgramResponse, ProgramError> for ConfigCopyProgram {
+//     async fn send_with(&mut self, client: &mut SAPClient) -> Result<ProgramResponse, ProgramError> {
+//         client.send(self).await;
+//         Ok(ProgramResponse {})
+//     }
+// }
+
 impl Config for ConfigCreateProgram {
     fn get_body(&self) -> String {
         self.body.clone()
@@ -364,6 +388,19 @@ impl Config for ConfigCreateProgram {
     }
 }
 #[async_trait]
+impl Sendable for ConfigCreateProgram {
+    async fn send_with(&mut self, client: &mut SAPClient) -> Result<(), AdtError> {
+        client.send(self).await;
+        Ok(())
+    }
+    fn get_response(&self) -> Option<Responses> {
+        Some(Responses::Program(String::from("")))
+    }
+}
+impl SendableConfig for ConfigCreateProgram {}
+impl SendableConfig for ConfigCopyProgram {}
+impl SendableConfig for ConfigDeleteProgram {}
+
 impl Config for ConfigCopyProgram {
     fn get_body(&self) -> String {
         self.body.clone()
@@ -372,6 +409,17 @@ impl Config for ConfigCopyProgram {
         self.path.clone()
     }
 }
+#[async_trait]
+impl Sendable for ConfigCopyProgram {
+    async fn send_with(&mut self, client: &mut SAPClient) -> Result<(), AdtError> {
+        client.send(self).await;
+        Ok(())
+    }
+    fn get_response(&self) -> Option<Responses> {
+        Some(Responses::Program(String::from("")))
+    }
+}
+
 impl LockHandle for ConfigDeleteProgram {
     fn get_lock_handle_path(&self) -> String {
         format!(

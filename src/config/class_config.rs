@@ -1,5 +1,8 @@
-use super::{AdtError, AdtResponse, Config, Responses, SAPClient, Sendable};
+use super::Sendable;
+use super::{AdtError, AdtResponse, Config, Responses, SAPClient, SendableConfig};
 use async_trait::async_trait;
+use std::fmt::Error;
+use std::future::Future;
 pub struct ClassConfig {
     body: String,
     path: String,
@@ -7,13 +10,13 @@ pub struct ClassConfig {
 
 pub struct ClassResponse {}
 
-impl AdtResponse for ClassResponse {
-    fn get_data(self) -> Responses {
-        Responses::Class(())
-    }
-}
+// impl AdtResponse for ClassResponse {
+//     fn get_data(self) -> Responses {
+//         Responses::Class(())
+//     }
+// }
 pub struct ClassError {}
-impl AdtError for ClassError {}
+// impl AdtError for ClassError {}
 
 impl ClassConfig {
     pub fn new(class_name: &str, package_name: &str, transport_request: &str) -> Self {
@@ -39,7 +42,7 @@ impl ClassConfig {
         }
     }
 }
-#[async_trait]
+
 impl Config for ClassConfig {
     fn get_body(&self) -> String {
         self.body.clone()
@@ -47,26 +50,38 @@ impl Config for ClassConfig {
     fn get_path(&self) -> String {
         self.path.clone()
     }
+}
+#[async_trait]
+impl Sendable for ClassConfig {
+    async fn send_with(&mut self, client: &mut SAPClient) -> Result<(), AdtError> {
+        let res = client.send(self).await;
+        Ok(())
+        // Ok(res.text().await.unwrap())
+    }
+    fn get_response(&self) -> Option<Responses> {
+        Some(Responses::Class(String::from("")))
+    }
 
     // async fn send_with(&mut self, client: &mut super::SAPClient) -> reqwest::Response {
     //     client.send(self).await
     // }
 }
-#[async_trait]
-impl Sendable<ClassResponse, ClassError> for ClassConfig {
-    async fn send_with(&mut self, client: &mut SAPClient) -> Result<ClassResponse, ClassError> {
-        client.send(self).await;
-        let res = ClassResponse {};
-        Ok(res)
-    }
-    // async fn send_with<>(
-    //     &mut self,
-    //     client: &mut super::SAPClient,
-    // ) -> Result<ClassResponse, ClassError> {
-    //     client.send(self).await;
-    //     Ok(ClassResponse {})
-    // }
-}
+impl SendableConfig for ClassConfig {}
+// #[async_trait]
+// impl Sendable<ClassResponse, ClassError> for ClassConfig {
+//     async fn send_with(&mut self, client: &mut SAPClient) -> Result<(), ClassError> {
+//         client.send(self).await;
+//         let res = ClassResponse {};
+//         Ok(res)
+//     }
+//     // async fn send_with<>(
+//     //     &mut self,
+//     //     client: &mut super::SAPClient,
+//     // ) -> Result<ClassResponse, ClassError> {
+//     //     client.send(self).await;
+//     //     Ok(ClassResponse {})
+//     // }
+// }
 
 // #[async_trait]
 // impl crate::config::SendWith for ClassConfig {

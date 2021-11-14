@@ -1,5 +1,5 @@
-use crate::config::Sendable;
-use crate::config::{AdtError, AdtResponse, Config, LockHandle, Responses};
+// use crate::config::Sendable;
+use crate::config::{AdtError, AdtResponse, Config, LockHandle, Responses, SendableConfig};
 use reqwest::{header::HeaderMap, Client, Response};
 use std::collections::HashMap;
 #[derive(Debug)]
@@ -89,8 +89,8 @@ impl SAPClient {
                     .collect::<Vec<&str>>()
                     .get(0)
                     .unwrap();
-                println!("{}", cookie_name.clone());
-                println!("{}", cookie_value.clone());
+                // println!("{}", cookie_name.clone());
+                // println!("{}", cookie_value.clone());
                 self.cookies.insert(
                     String::from(cookie_name.clone()),
                     String::from(cookie_value.clone()),
@@ -126,12 +126,7 @@ impl SAPClient {
     //     );
     //     map
     // }
-    pub async fn delete<T, V, E>(&mut self, config: &T) -> Response
-    where
-        T: Config + Sendable<V, E>,
-        V: AdtResponse,
-        E: AdtError,
-    {
+    pub async fn delete(&mut self, config: &impl SendableConfig) -> Response {
         if self.session.is_none() {
             self.fetch_csrf_token().await;
             println!("{:?}", self.headers.as_ref().unwrap());
@@ -185,7 +180,7 @@ impl SAPClient {
     {
         if self.session.is_none() {
             self.fetch_csrf_token().await;
-            println!("{:?}", self.headers.as_ref().unwrap());
+            // println!("{:?}", self.headers.as_ref().unwrap());
             self.session = Some(Session {
                 csrf_token: self
                     .headers
@@ -234,12 +229,7 @@ impl SAPClient {
     //     T: AdtResponse<Responses>,
     //     E: AdtError,
     // {
-    pub async fn send<T, V, E>(&mut self, config: &T) -> Response
-    where
-        T: Config + Sendable<V, E>,
-        V: AdtResponse,
-        E: AdtError,
-    {
+    pub async fn send(&mut self, config: &impl SendableConfig) -> Response {
         if self.session.is_none() {
             self.fetch_csrf_token().await;
             // println!("{:?}", self.headers.as_ref().unwrap());
@@ -287,15 +277,10 @@ impl SAPClient {
             .unwrap()
     }
 
-    pub async fn get<T, V, E>(&mut self, config: &T) -> Response
-    where
-        T: Config + Sendable<V, E>,
-        V: AdtResponse,
-        E: AdtError,
-    {
+    pub async fn get(&mut self, config: &impl SendableConfig) -> Response {
         if self.session.is_none() {
             self.fetch_csrf_token().await;
-            println!("{:?}", self.headers.as_ref().unwrap());
+            // println!("{:?}", self.headers.as_ref().unwrap());
             self.session = Some(Session {
                 csrf_token: self
                     .headers

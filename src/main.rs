@@ -1,9 +1,8 @@
 use crate::command_parser::CommandMatchParser;
+use crate::output_handler::{handle_error, handle_output};
 use app_config::AppConfig;
 use clap::{load_yaml, App};
-use sap_adt_bindings::config::{AdtError, AdtResponse, Config};
 use sap_adt_bindings::net::SAPClient;
-
 pub mod app_config;
 pub mod command_parser;
 pub mod output_handler;
@@ -14,8 +13,7 @@ async fn main() {
 
     let matches = App::from(cli_yaml).get_matches();
 
-    let mut config: Box<dyn Config> = CommandMatchParser::parse(&matches);
-
+    let mut config = CommandMatchParser::parse(&matches);
     let mut app_conf = AppConfig::init();
     let mut client: SAPClient;
 
@@ -30,15 +28,26 @@ async fn main() {
         update_session_file = true;
     }
 
-    let result = config.send_with(&mut client).await;
+    match config.send_with(&mut client).await {
+        Ok(()) => handle_output(config.get_response().unwrap()),
+        Err(e) => handle_error(e),
+    }
 
-    // let res = FreeStyleConfig::new(String::from(""), 1).send_with(&mut client).await
     if update_session_file {
         app_conf.set_session_for_sys("ITK", &client.get_session().unwrap());
         app_conf.update_file();
     }
 }
-
+// macro_rules! cast {
+//     ($target: expr, $pat: path) => {{
+//         if let $pat(a) = $target {
+//             // #1
+//             a
+//         } else {
+//             panic!("mismatch variant when cast to {}", stringify!($pat)); // #2
+//         }
+//     }};
+// }
 // AppConfig::read_destination_file();
 // struct CommandMatchParser {}
 

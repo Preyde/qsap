@@ -2,7 +2,11 @@ pub mod class_config;
 pub mod freestyle_config;
 pub mod program_config;
 
-use std::fmt::Error;
+use std::{
+    error::Error,
+    fmt::{self, Display, Formatter},
+    future::Future,
+};
 
 use crate::data::abap_table::ABAPTable;
 pub use crate::net::SAPClient;
@@ -27,11 +31,10 @@ pub trait LockHandle {
 // }
 pub enum Responses {
     FreeStyle(ABAPTable),
-    Program(()),
-    Class(()),
+    Program(String),
+    Class(String),
 }
 
-#[async_trait]
 pub trait Config {
     fn get_path(&self) -> String;
     fn get_body(&self) -> String;
@@ -40,14 +43,55 @@ pub trait Config {
     //     T: AdtResponse<Responses>,
     //     E: AdtError;
 }
-#[async_trait]
-pub trait Sendable<T, E>
-where
-    T: AdtResponse,
-    E: AdtError,
-{
-    async fn send_with(&mut self, client: &mut SAPClient) -> Result<T, E>;
+#[derive(Debug)]
+pub struct AdtError {
+    details: String,
 }
+
+impl AdtError {
+    fn new(msg: &str) -> Self {
+        AdtError {
+            details: msg.to_string(),
+        }
+    }
+}
+
+impl Display for AdtError {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{}", self.details)
+    }
+}
+
+impl Error for AdtError {
+    fn description(&self) -> &str {
+        &self.details
+    }
+}
+
+#[async_trait]
+pub trait Sendable {
+    async fn send_with(&mut self, client: &mut SAPClient) -> Result<(), AdtError>;
+    fn get_response(&self) -> Option<Responses>;
+}
+// pub struct XXX {}
+// #[async_trait]
+// impl Sendable for XXX {
+//     async fn send_with(&mut self, client: &mut SAPClient) -> Result<Responses::Program, Error> {
+//         Ok(Responses::Program(String::from("")))
+//     }
+// }
+// async fn testxx(xx: &mut XXX) {
+//     let x = xx.send_with(&mut SAPClient::new("")).await.unwrap();
+// }
+pub trait SendableConfig: Sendable + Config {}
+// #[async_trait]
+// pub trait Sendable<T, E>
+// where
+//     T: AdtResponse,
+//     E: AdtError,
+// {
+//     async fn send_with<T>(&mut self, client: &mut SAPClient) -> Result<T, E>;
+// }
 pub trait AdtResponse {
     fn get_data(self) -> Responses;
 }
@@ -56,7 +100,7 @@ pub trait AdtResponse {
 //     Config + Sendable<(dyn AdtResponse<Responses> + 'static), (dyn AdtError + 'static)>
 // {
 // }
-pub trait AdtError {}
+// pub trait AdtError {}
 
 // struct Config {
 //     body: String,
