@@ -14,6 +14,7 @@ use sap_adt_bindings::net::Destination;
 use sap_adt_bindings::net::Session;
 use serde::Deserialize;
 use serde_json::from_str;
+use std::ascii::AsciiExt;
 use std::collections::HashMap;
 use std::fs::read_to_string;
 use std::io::stdin;
@@ -23,6 +24,8 @@ use std::str::FromStr;
 
 use std::io;
 use std::io::prelude::*;
+
+use crate::crypt::Crypt;
 
 pub mod app_config {}
 
@@ -57,18 +60,50 @@ impl AppConfig {
         }
 
         conf.read_destination_file();
+        conf.decrypt_passwords();
         conf.check_destinations();
         conf
     }
-    fn check_destinations(&self) {
-        let dest_plain_text_passwd: Vec<&Destination> = self
-            .destinations
+
+    fn decrypt_passwords(&mut self) {
+        let mut new_destinations: Vec<Destination> = vec![];
+        let x = format!("{{{}}}, ", &self.destinations[0].sys_id.to_lowercase());
+        println!("{}", x);
+        for dest in self.destinations.iter() {
+            if dest.passwd != format!("{{{}}}", &dest.sys_id.to_lowercase()) {
+                println!("XXX");
+                new_destinations.push(dest.clone());
+                continue;
+            }
+            let mut crypt = Crypt::from_base64_key_nounce(
+                "password",
+                &self.get_shadow_nonce(&dest.sys_id).unwrap(),
+            );
+            let decrypted_passwd = crypt.decrypt(&self.get_shadow_passwd(&dest.sys_id).unwrap());
+            println!("{}", decrypted_passwd);
+            let mut new_dest = dest.clone();
+            println!("{}", &decrypted_passwd);
+            new_dest.passwd = decrypted_passwd;
+
+            new_destinations.push(new_dest);
+        }
+        println!("{:?}", &new_destinations);
+        self.destinations = new_destinations;
+    }
+
+    fn check_destinations(&mut self) {
+        let destinations = &self.destinations.clone();
+
+        let unencrypted_destinations: Vec<&Destination> = destinations
             .iter()
-            .filter(|dest| dest.passwd != format!("{0}", dest.sys_id))
+            .filter(|dest| dest.passwd != format!("{{{}}}", dest.sys_id.to_lowercase()))
             .collect();
 
+        if unencrypted_destinations.is_empty() {
+            return;
+        }
         let mut systems_string = String::new();
-        dest_plain_text_passwd
+        unencrypted_destinations
             .iter()
             .for_each(|dest| systems_string.push_str(&format!("{}, ", &dest.sys_id)));
         // .collect();
@@ -97,7 +132,14 @@ impl AppConfig {
                 Event::Key(KeyEvent {
                     code: KeyCode::Enter,
                     modifiers: no_modifiers,
-                }) => println!("Alright time to encrypt"),
+                }) => {
+                    self.write_to_shadow_file(unencrypted_destinations);
+                    break;
+                    // for dest in unencrypted_destinations.iter() {
+                    //     let base64_passwd = Crypt::new_random().encrypt(&dest.passwd);
+                    //     self.write_shadow_entry(dest, &base64_passwd);
+                    // }
+                }
                 _ => break,
             }
 
@@ -112,15 +154,48 @@ impl AppConfig {
 
         // println!("Looks like you got plain text passwords in destination file.. better encrypt them right now? ;)")
     }
-    fn write_to_shadow_file(key: &str, sys_id: &str, passwd: &str) {
-        let key = GenericArray::from_slice(&[0u8; 16]);
-        let cipher = aes::Aes256::new(&key);
+    fn get_shadow_passwd(&self, sys_id: &str) -> Option<String> {
+        self.shadow_config.get(sys_id, "passwd")
+    }
+    fn get_shadow_key(&self, sys_id: &str) -> Option<String> {
+        self.shadow_config.get(sys_id, "key")
+    }
+    fn get_shadow_nonce(&self, sys_id: &str) -> Option<String> {
+        self.shadow_config.get(sys_id, "nonce")
+    }
 
-        let mut block = aes::Block::from_slice(passwd.as_bytes()).clone();
+    fn write_to_shadow_file(&mut self, destinations: Vec<&Destination>) {
+        for dest in destinations.iter() {
+            let mut crypt = Crypt::new_random("password");
 
-        cipher.encrypt_block(&mut block);
-        // let block = aes::Block::default();
-        // aes::cbc_encryptor(key_size, key, iv, padding)
+            self.write_shadow_entry(
+                dest,
+                &crypt.encrypt(&dest.passwd),
+                &crypt.get_key_base64(),
+                &crypt.get_nonce_base64(),
+            );
+        }
+    }
+
+    fn write_shadow_entry(
+        &mut self,
+        destination: &Destination,
+        base64_passwd: &str,
+        base64_key: &str,
+        base64_nonce: &str,
+    ) {
+        self.shadow_config.set(
+            &destination.sys_id,
+            "passwd",
+            Some(String::from(base64_passwd)),
+        );
+        self.shadow_config
+            .set(&destination.sys_id, "key", Some(String::from(base64_key)));
+        self.shadow_config.set(
+            &destination.sys_id,
+            "nonce",
+            Some(String::from(base64_nonce)),
+        );
     }
     pub fn get_default_destination(&mut self) -> Destination {
         self.destinations
@@ -170,6 +245,7 @@ impl AppConfig {
     pub fn update_file(&mut self) {
         self.sessions_config.write("sessions.ini");
         self.config.write("settings.ini");
+        self.shadow_config.write("shadow.ini");
     }
     pub fn get_destination_from_sys(&mut self, sys_id: &str) -> Option<&Destination> {
         self.destinations.iter().find(|dest| dest.sys_id == sys_id)

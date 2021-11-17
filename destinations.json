@@ -4,7 +4,7 @@
         "host": "http://hamerpitk01.lej.it2-solutions.com",
         "port": 8000,
         "uname": "PFRANK",
-        "passwd": "Start123!",
+        "passwd": "{itk}",
         "mandt": "300",
         "lang": "DE"
     },
@@ -13,7 +13,7 @@
         "host": "http://hamerpith01.lej.it2-solutions.com",
         "port": 8000,
         "uname": "pfrank",
-        "passwd": "Start123$",
+        "passwd": "{ith}",
         "mandt": "001",
         "lang": "DE"
     },
@@ -22,7 +22,7 @@
         "host": "https://hamerpiea.zalaris.de",
         "port": 443,
         "uname": "pfrank",
-        "passwd": "Start1234$",
+        "passwd": "{iea}",
         "mandt": "200",
         "lang": "DE"
     }

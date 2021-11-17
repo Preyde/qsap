@@ -48,13 +48,13 @@ use crypt::Crypt; // Or `Aes128Gcm`
                   //     cipher.decrypt(&mut encrypted_data).unwrap().to_vec()
                   // }
 fn hash() {
-    let mut crypt = Crypt::new_random();
+    // let mut crypt = Crypt::new_random();
 
-    let encrypt_base64 = crypt.encrypt("My name a jeff!!!");
+    // let encrypt_base64 = crypt.encrypt("My name a jeff!!!");
 
-    let original_passwd = crypt.decrypt(&encrypt_base64);
+    // let original_passwd = crypt.decrypt(&encrypt_base64);
 
-    println!("Passwort: {}", original_passwd);
+    // println!("Passwort: {}", original_passwd);
     // let mut key_raw: Vec<u8, 32> = repeat(0u8).take(32).collect();
     // OsRng.fill_bytes(&mut key_raw[..]);
     // let key = Key::from_slice(&key_raw);
@@ -207,8 +207,8 @@ async fn main() {
     // println!("{}", config.get_source().unwrap());
     if update_session_file {
         app_conf.set_session_for_sys("ITK", &client.get_session().unwrap());
-        app_conf.update_file();
     }
+    app_conf.update_file();
 }
 // macro_rules! cast {
 //     ($target: expr, $pat: path) => {{
