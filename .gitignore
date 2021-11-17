@@ -1,3 +1,6 @@
 /target
 sapClient.ini
 destinations.json
+sessions.ini
+settings.ini
+shadow.ini
