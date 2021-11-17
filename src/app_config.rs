@@ -1,4 +1,14 @@
+use aes;
+use aes::cipher::generic_array::GenericArray;
+use aes::BlockEncrypt;
+use aes::NewBlockCipher;
 use chrono::{DateTime, Utc};
+use crossterm::event::read;
+use crossterm::event::Event;
+use crossterm::event::KeyCode;
+use crossterm::event::KeyEvent;
+use crossterm::event::KeyModifiers;
+use crypto::aessafe;
 use ini::configparser::ini::Ini;
 use sap_adt_bindings::net::Destination;
 use sap_adt_bindings::net::Session;
@@ -6,11 +16,19 @@ use serde::Deserialize;
 use serde_json::from_str;
 use std::collections::HashMap;
 use std::fs::read_to_string;
+use std::io::stdin;
+use std::io::stdout;
 use std::str::FromStr;
+// use text_io::read;
+
+use std::io;
+use std::io::prelude::*;
+
 pub mod app_config {}
 
 pub struct AppConfig {
     config: Ini,
+    shadow_config: Ini,
     // default_sys: String,
     sessions_config: Ini,
     destinations: Vec<Destination>,
@@ -21,6 +39,7 @@ impl AppConfig {
         let mut conf = AppConfig {
             config: Ini::new(),
             sessions_config: Ini::new(),
+            shadow_config: Ini::new(),
             destinations: vec![],
             // destination_string: ,
         };
@@ -33,9 +52,75 @@ impl AppConfig {
         if conf.sessions_config.load("sessions.ini").is_err() {
             std::fs::File::create("sessions.ini");
         }
+        if conf.shadow_config.load("shadow.ini").is_err() {
+            std::fs::File::create("shadow.ini");
+        }
 
         conf.read_destination_file();
+        conf.check_destinations();
         conf
+    }
+    fn check_destinations(&self) {
+        let dest_plain_text_passwd: Vec<&Destination> = self
+            .destinations
+            .iter()
+            .filter(|dest| dest.passwd != format!("{0}", dest.sys_id))
+            .collect();
+
+        let mut systems_string = String::new();
+        dest_plain_text_passwd
+            .iter()
+            .for_each(|dest| systems_string.push_str(&format!("{}, ", &dest.sys_id)));
+        // .collect();
+        systems_string.pop();
+        systems_string.pop();
+        println!(
+            "Looks like you got plain text passwords in destination file for systems {}",
+            systems_string
+        );
+        println!("better encrypt them right now? ;)");
+        println!("Press [ENTER] to encrypt or any other key to continue");
+        // println!("Any other key to cancel");
+        // stdout
+        // write!(stdout(), "Press any key to continue...").unwrap();
+        // stdout().flush().unwrap();
+
+        // // Read a single byte and discard
+        // let x = stdin().read(&mut [0u8]).unwrap();
+        // println!("{}", x)
+        let no_modifiers = KeyModifiers::empty();
+
+        loop {
+            //--code--
+
+            match read().unwrap() {
+                Event::Key(KeyEvent {
+                    code: KeyCode::Enter,
+                    modifiers: no_modifiers,
+                }) => println!("Alright time to encrypt"),
+                _ => break,
+            }
+
+            //--code--
+        }
+        // readline();
+        // let mut stdout = stdout().into_raw_mode().unwrap();
+        // stdout.flush().unwrap();
+        // stdin().events().next();
+        // let answer: i32 = read!("{}\n");
+        // println!("{}", answer);
+
+        // println!("Looks like you got plain text passwords in destination file.. better encrypt them right now? ;)")
+    }
+    fn write_to_shadow_file(key: &str, sys_id: &str, passwd: &str) {
+        let key = GenericArray::from_slice(&[0u8; 16]);
+        let cipher = aes::Aes256::new(&key);
+
+        let mut block = aes::Block::from_slice(passwd.as_bytes()).clone();
+
+        cipher.encrypt_block(&mut block);
+        // let block = aes::Block::default();
+        // aes::cbc_encryptor(key_size, key, iv, padding)
     }
     pub fn get_default_destination(&mut self) -> Destination {
         self.destinations

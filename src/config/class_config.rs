@@ -3,6 +3,7 @@ use super::{AdtError, AdtResponse, Config, Responses, SAPClient, SendableConfig}
 use async_trait::async_trait;
 use std::fmt::Error;
 use std::future::Future;
+#[derive(Debug)]
 pub struct ClassConfig {
     body: String,
     path: String,

@@ -16,5 +16,14 @@
         "passwd": "Start123$",
         "mandt": "001",
         "lang": "DE"
+    },
+    {
+        "sys_id": "IEA",
+        "host": "https://hamerpiea.zalaris.de",
+        "port": 443,
+        "uname": "pfrank",
+        "passwd": "Start1234$",
+        "mandt": "200",
+        "lang": "DE"
     }
 ]

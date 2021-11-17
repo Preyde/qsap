@@ -4,7 +4,10 @@ use sap_adt_bindings::{
     config::{
         class_config::{ClassConfig, ClassError, ClassResponse},
         freestyle_config::{FreeStyleConfig, FreeStyleError, FreeStyleResponse},
-        program_config::{ConfigCreateProgram, ProgramError, ProgramResponse},
+        program_config::{
+            ConfigCopyProgram, ConfigCreateProgram, ConfigDeleteProgram, ProgramError,
+            ProgramResponse,
+        },
         AdtError, AdtResponse, Config, Responses, SAPClient, Sendable, SendableConfig,
     },
     data::abap_table::ABAPTable,
@@ -40,26 +43,48 @@ pub struct ClassCommandParser {}
 // type SendableConfig = dyn Config + SendWith;
 // trait SendableConfig: Config + SendWith {}
 
-fn parse_table_command(args: &ArgMatches) -> Box<dyn SendableConfig> {
-    let tab_name = args.value_of("name").unwrap();
-    let rows: Option<u32> = args.value_of_t("rows").ok();
+fn parse_delete_program_command(matches: &ArgMatches) -> Box<dyn SendableConfig> {
+    Box::new(ConfigDeleteProgram::new(
+        matches.value_of("name").unwrap(),
+        matches.value_of("transport").unwrap(),
+    ))
+}
+
+fn parse_create_program_command(matches: &ArgMatches) -> Box<dyn SendableConfig> {
+    Box::new(ConfigCreateProgram::new(
+        matches.value_of("name").unwrap(),
+        matches.value_of("package"),
+        matches.value_of("transport"),
+    ))
+}
+fn parse_copy_command(matches: &ArgMatches) -> Box<dyn SendableConfig> {
+    Box::new(ConfigCopyProgram::new(
+        matches.value_of("name").unwrap(),
+        matches.value_of("package").unwrap(),
+        matches.value_of("source").unwrap(),
+        matches.value_of("transport").unwrap(),
+    ))
+}
+fn parse_table_command(matches: &ArgMatches) -> Box<dyn SendableConfig> {
+    let tab_name = matches.value_of("name").unwrap();
+    let rows: Option<u32> = matches.value_of_t("rows").ok();
     // let path = args.value_of("out");
     Box::new(FreeStyleConfig::new(
         format!("SELECT * FROM {0}", tab_name),
         rows,
     ))
 }
-fn parse_sql_command(args: &ArgMatches) -> Box<dyn SendableConfig> {
+fn parse_sql_command(matches: &ArgMatches) -> Box<dyn SendableConfig> {
     Box::new(FreeStyleConfig::new(
-        args.value_of_t("sql_exp").unwrap(),
-        args.value_of_t("rows").ok(),
+        matches.value_of_t("sql_exp").unwrap(),
+        matches.value_of_t("rows").ok(),
     ))
 }
-fn parse_class_command(args: &ArgMatches) -> Box<dyn SendableConfig> {
+fn parse_class_command(matches: &ArgMatches) -> Box<dyn SendableConfig> {
     Box::new(ClassConfig::new(
-        args.value_of("name").unwrap(),
-        args.value_of("package").unwrap(),
-        args.value_of("transport").unwrap(),
+        matches.value_of("name").unwrap(),
+        matches.value_of("package").unwrap(),
+        matches.value_of("transport").unwrap(),
     ))
 }
 
@@ -155,13 +180,15 @@ impl CommandMatchParser {
 
         match &args.subcommand() {
             &Some(("table", matches)) => parse_table_command(matches),
-            // &Some(("sql", matches)) => parse_sql_command(matches),
+            &Some(("sql", matches)) => parse_sql_command(matches),
             &Some(("new", new_matches)) => match new_matches.subcommand() {
-                // Some(("prog", matches)) => Box::new(ProgramCommandParser::parse(matches)),
+                Some(("prog", matches)) => parse_create_program_command(matches),
                 Some(("class", matches)) => parse_class_command(matches),
                 Some((_, _)) => panic!(""),
                 None => panic!(""),
             },
+            &Some(("copy", matches)) => parse_copy_command(matches),
+            &Some(("delete", matches)) => parse_delete_program_command(matches),
             &Some((_, _)) => panic!(""),
             None => panic!(""),
         }

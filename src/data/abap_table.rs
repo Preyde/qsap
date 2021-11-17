@@ -1,6 +1,6 @@
 use cli_table::{print_stdout, Cell, Style, Table};
 use serde::Deserialize;
-
+#[derive(Debug)]
 pub struct ABAPTable {
     headers: Vec<String>,
     data: Vec<Vec<String>>,

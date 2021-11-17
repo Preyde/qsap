@@ -21,6 +21,7 @@ use self::{
 
 pub trait LockHandle {
     fn get_lock_handle_path(&self) -> String;
+    fn get_unlock_path(&self) -> Option<String>;
 }
 // #[async_trait]
 // pub trait SendWith {
@@ -35,7 +36,7 @@ pub enum Responses {
     Class(String),
 }
 
-pub trait Config {
+pub trait Config: std::fmt::Debug {
     fn get_path(&self) -> String;
     fn get_body(&self) -> String;
     // async fn send_with<T, E>(&mut self, client: &mut SAPClient) -> Result<T, E>

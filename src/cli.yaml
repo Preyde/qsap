@@ -55,7 +55,7 @@ subcommands:
                 short: t
             - package:
                 about: Paket
-                required: true
+                required: false
                 takes_value: true
                 short: p
             - name:
@@ -103,6 +103,11 @@ subcommands:
                 about: Name of program
                 required: true
                 takes_value: true
+            - transport:
+                about: Transportauftrag
+                required: true
+                takes_value: true
+                short: t
     - copy:
         args:
             - source:

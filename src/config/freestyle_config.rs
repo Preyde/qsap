@@ -2,6 +2,8 @@ use super::{AdtError, Config, Responses, SAPClient, SendableConfig};
 use crate::config::Sendable;
 use crate::data::abap_table::{ABAPTable, TableData};
 use async_trait::async_trait;
+
+#[derive(Debug)]
 pub struct FreeStyleConfig {
     body: String,
     path: String,
@@ -19,7 +21,7 @@ impl FreeStyleConfig {
         FreeStyleConfig {
             body: sql_exp,
             path: format!(
-                "/sap/bc/adt/datapreview/freestyle?rowNumber={row_number}&sap-client=300",
+                "/sap/bc/adt/datapreview/freestyle?rowNumber={row_number}",
                 row_number = row_number.unwrap_or(5)
             ),
             table: None,
