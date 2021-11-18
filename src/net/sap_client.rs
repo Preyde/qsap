@@ -1,7 +1,7 @@
 // use crate::config::Sendable;
 use crate::config::{AdtError, AdtResponse, Config, LockHandle, Responses, SendableConfig};
 use reqwest::{header::HeaderMap, Client, Response};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display};
 #[derive(Debug)]
 pub struct Session {
@@ -9,7 +9,7 @@ pub struct Session {
     pub session_cookie: String,
     pub session_type: String,
 }
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Serialize)]
 pub struct Destination {
     pub sys_id: String,
     pub host: String,

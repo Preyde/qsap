@@ -1,0 +1,194 @@
+use crate::app_config::PasswordManager;
+use crate::net::{Destination, Session};
+use chrono::{DateTime, Utc};
+use crossterm::event::read;
+use crossterm::event::Event;
+use crossterm::event::KeyCode;
+use crossterm::event::KeyEvent;
+use crossterm::event::KeyModifiers;
+use ini::configparser::ini::Ini;
+use std::str::FromStr;
+
+use super::destination_manager::DestinationManager;
+use crate::crypt::Crypt;
+
+pub mod app_config {}
+
+///
+pub struct AppConfig {
+    config: Ini,
+    password_manager: PasswordManager,
+    sessions_config: Ini,
+    destination_manager: DestinationManager,
+}
+
+impl AppConfig {
+    pub fn init() -> Self {
+        let mut conf = AppConfig {
+            config: Ini::new(),
+            sessions_config: Ini::new(),
+            password_manager: PasswordManager::init(),
+            destination_manager: DestinationManager::init(),
+        };
+        if conf.config.load("settings.ini").is_err() {
+            std::fs::File::create("settings.ini");
+            conf.set_default_sys("ITK");
+
+            conf.update_file();
+        }
+        if conf.sessions_config.load("sessions.ini").is_err() {
+            std::fs::File::create("sessions.ini");
+        }
+
+        conf.check_destinations();
+
+        conf
+    }
+
+    fn decrypt_password(&self, dest: &mut Destination) {
+        let mut crypt = Crypt::from_base64_key_nounce(
+            "password",
+            &self
+                .password_manager
+                .get_shadow_nonce(&dest.sys_id)
+                .unwrap(),
+        );
+        let decrypted_passwd = crypt.decrypt(
+            &self
+                .password_manager
+                .get_shadow_passwd(&dest.sys_id)
+                .unwrap(),
+        );
+
+        dest.passwd = decrypted_passwd;
+    }
+
+    fn check_destinations(&mut self) {
+        if self.destination_manager.has_unencrypted_passwd() {
+            self.ask_to_encrypt();
+        }
+    }
+    /// Ask the user if encrypting passwords is ok. Yes = true, No = false
+    fn ask_to_encrypt(&mut self) {
+        let mut systems_string = String::new();
+
+        self.destination_manager
+            .get_dests_plain_passwd()
+            .iter()
+            .for_each(|dest| systems_string.push_str(&format!("{}, ", &dest.sys_id)));
+
+        systems_string.pop();
+        systems_string.pop();
+
+        println!(
+            "Unencrypted passwords in destination file for systems: {}",
+            systems_string
+        );
+        println!("Press [ENTER] to encrypt or any other key to continue");
+
+        let no_modifiers = KeyModifiers::empty();
+
+        loop {
+            match read().unwrap() {
+                Event::Key(KeyEvent {
+                    code: KeyCode::Enter,
+                    modifiers: no_modifiers,
+                }) => {
+                    self.encryption_process();
+                    break;
+                }
+                _ => break,
+            }
+        }
+    }
+    /// Encrypts the passwords in destination.json and puts them into the shadow.ini file.
+    /// The passwords in the destination.json file are replaced by identifiers
+    fn encryption_process(&mut self) {
+        for dest in self.destination_manager.get_dests_plain_passwd().clone() {
+            let mut crypt = Crypt::new_random("password");
+
+            self.password_manager.write_entry(
+                &dest.sys_id,
+                &crypt.encrypt(&dest.passwd),
+                &crypt.get_nonce_base64(),
+            );
+            self.destination_manager.hide_passwd(&dest.sys_id);
+            // system_ids.push(&dest.sys_id);
+        }
+
+        self.password_manager.write();
+        self.destination_manager.write();
+    }
+
+    pub fn get_default_destination(&mut self) -> Destination {
+        let mut dest = self
+            .destination_manager
+            .get_destination(&self.get_default_sys())
+            .unwrap();
+
+        self.decrypt_password(&mut dest);
+
+        dest
+    }
+
+    pub fn get_session_from_sys(&mut self, sys_id: &str) -> Option<Session> {
+        let section = format!("session_{0}", sys_id);
+        let expires_string = self.sessions_config.get(&section, "expires")?;
+        let expires: DateTime<Utc> = DateTime::from_str(&expires_string).ok()?;
+
+        if expires - Utc::now() <= chrono::Duration::zero() {
+            // Session is over
+            return None;
+        }
+
+        Some(Session {
+            csrf_token: self.sessions_config.get(&section, "csrf_token")?,
+            session_cookie: self.sessions_config.get(&section, "session_cookie")?,
+            session_type: "stateless".to_string(),
+        })
+    }
+    pub fn set_session_for_sys(&mut self, sys_id: &str, session: &Session) {
+        let section = format!("session_{0}", sys_id);
+        self.sessions_config
+            .set(&section, "csrf_token", Some(session.csrf_token.clone()));
+        self.sessions_config.set(
+            &section,
+            "session_cookie",
+            Some(session.session_cookie.clone()),
+        );
+        self.sessions_config.set(
+            &section,
+            "expires",
+            Some(
+                Utc::now()
+                    .checked_add_signed(chrono::Duration::minutes(15))
+                    .unwrap()
+                    .to_string(),
+            ),
+        );
+    }
+
+    pub fn update_file(&mut self) {
+        self.sessions_config.write("sessions.ini");
+    }
+    pub fn get_destination_from_sys(&self, sys_id: &str) -> Option<Destination> {
+        let mut dest = self
+            .destination_manager
+            .get_destinations()
+            .iter()
+            .find(|dest| dest.sys_id == sys_id)?
+            .clone();
+
+        self.decrypt_password(&mut dest);
+        println!("{:?}", dest);
+        Some(dest)
+    }
+
+    pub fn get_default_sys(&self) -> String {
+        self.config.get("_default", "sys").unwrap()
+    }
+    pub fn set_default_sys(&mut self, sys_id: &str) {
+        self.config
+            .set("_default", "sys", Some(String::from(sys_id)));
+    }
+}

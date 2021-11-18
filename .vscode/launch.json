@@ -5,60 +5,15 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "lldb",
+            "name": "(Windows) Starten",
+            "type": "cppvsdbg",
             "request": "launch",
-            "name": "Debug unit tests in library 'sap_adt_bindings'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--lib",
-                    "--package=sapClient"
-                ],
-                "filter": {
-                    "name": "sap_adt_bindings",
-                    "kind": "lib"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug executable 'sapClient'",
-            "cargo": {
-                "args": [
-                    "build",
-                    "--bin=sapClient",
-                    "--package=sapClient"
-                ],
-                "filter": {
-                    "name": "sapClient",
-                    "kind": "bin"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
-        },
-        {
-            "type": "lldb",
-            "request": "launch",
-            "name": "Debug unit tests in executable 'sapClient'",
-            "cargo": {
-                "args": [
-                    "test",
-                    "--no-run",
-                    "--bin=sapClient",
-                    "--package=sapClient"
-                ],
-                "filter": {
-                    "name": "sapClient",
-                    "kind": "bin"
-                }
-            },
-            "args": [],
-            "cwd": "${workspaceFolder}"
+            "program": "${workspaceFolder}\\target\\debug\\sapClient.exe",
+            "args": ["table", "zhre_0024"],
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "console": "externalTerminal"
         }
     ]
 }
