@@ -1,4 +1,4 @@
-use cli_table::{print_stdout, Cell, Style, Table};
+use cli_table::{print_stdout, Cell, Color, Style, Table};
 use serde::Deserialize;
 #[derive(Debug)]
 pub struct ABAPTable {

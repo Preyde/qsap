@@ -5,8 +5,8 @@ use sap_adt_bindings::{
         class_config::{ClassConfig, ClassError, ClassResponse},
         freestyle_config::{FreeStyleConfig, FreeStyleError, FreeStyleResponse},
         program_config::{
-            ConfigCopyProgram, ConfigCreateProgram, ConfigDeleteProgram, ProgramError,
-            ProgramResponse,
+            ConfigCopyProgram, ConfigCreateProgram, ConfigCreateTable, ConfigDeleteProgram,
+            ProgramError, ProgramResponse,
         },
         AdtError, AdtResponse, Config, Responses, SAPClient, Sendable, SendableConfig,
     },
@@ -63,6 +63,12 @@ fn parse_copy_command(matches: &ArgMatches) -> Box<dyn SendableConfig> {
         matches.value_of("package").unwrap(),
         matches.value_of("source").unwrap(),
         matches.value_of("transport").unwrap(),
+    ))
+}
+fn parse_new_table_command(matches: &ArgMatches) -> Box<dyn SendableConfig> {
+    Box::new(ConfigCreateTable::new(
+        matches.value_of("name").unwrap(),
+        matches.value_of("description").unwrap(),
     ))
 }
 fn parse_table_command(matches: &ArgMatches) -> Box<dyn SendableConfig> {
@@ -184,6 +190,7 @@ impl CommandMatchParser {
             &Some(("new", new_matches)) => match new_matches.subcommand() {
                 Some(("prog", matches)) => parse_create_program_command(matches),
                 Some(("class", matches)) => parse_class_command(matches),
+                Some(("tab", matches)) => parse_new_table_command(matches),
                 Some((_, _)) => panic!(""),
                 None => panic!(""),
             },

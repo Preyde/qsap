@@ -375,6 +375,7 @@ impl SAPClient {
                 "X-sap-adt-sessiontype",
                 &self.session.as_ref().unwrap().session_type,
             )
+            .header("Content-Type", "text/xml")
             .body(String::from(config.get_body()))
             .send()
             .await

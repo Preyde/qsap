@@ -4,14 +4,18 @@ use rustc_serialize::base64::FromBase64;
 /// Interface to shadow File which holds the encrypted password and the auto generated nonce
 pub struct PasswordManager {
     config: Ini,
+    path: String,
 }
 
 impl PasswordManager {
-    pub fn init() -> Self {
-        let mut this = PasswordManager { config: Ini::new() };
+    pub fn init(path: String) -> Self {
+        let mut this = PasswordManager {
+            config: Ini::new(),
+            path,
+        };
 
-        if this.config.load("shadow.ini").is_err() {
-            std::fs::File::create("shadow.ini");
+        if this.config.load(&this.path).is_err() {
+            std::fs::File::create(&this.path);
         }
 
         this
@@ -37,6 +41,6 @@ impl PasswordManager {
         self.config.get(sys_id, "nonce")
     }
     pub fn write(&self) {
-        self.config.write("shadow.ini");
+        self.config.write(&self.path);
     }
 }

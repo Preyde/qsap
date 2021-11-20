@@ -1,6 +1,9 @@
+use std::env::args_os;
+use std::process::exit;
+
 use crate::command_parser::CommandMatchParser;
 use crate::output_handler::{handle_error, handle_output};
-
+// use clap::AppSettings::{ArgRequiredElseHelp, SubcommandRequiredElseHelp};
 use clap::{load_yaml, App};
 use sap_adt_bindings::net::SAPClient;
 
@@ -12,8 +15,15 @@ use sap_adt_bindings::app_config::AppConfig;
 #[tokio::main]
 async fn main() {
     let cli_yaml = load_yaml!("cli.yaml");
+    let mut app = App::from(cli_yaml);
 
-    let matches = App::from(cli_yaml).get_matches();
+    // Check manually if no argument was given because clap throws exit code 2
+    if args_os().count() == 1 {
+        app.print_help().expect("Could not print help");
+        exit(0);
+    }
+
+    let matches = app.get_matches();
 
     let mut config = CommandMatchParser::parse(&matches);
 

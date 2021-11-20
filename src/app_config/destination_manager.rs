@@ -6,13 +6,15 @@ use crate::net::Destination;
 pub struct DestinationManager {
     dests: Vec<Destination>,
     dests_plain_text_passwd: Vec<Destination>,
+    path: String,
 }
 
 impl DestinationManager {
-    pub fn init() -> Self {
+    pub fn init(path: String) -> Self {
         let mut this = DestinationManager {
             dests: vec![],
             dests_plain_text_passwd: vec![],
+            path,
         };
 
         DestinationManager::read_destination_file(&mut this);
@@ -20,10 +22,7 @@ impl DestinationManager {
         this
     }
     fn read_destination_file(&mut self) {
-        self.dests = from_str(
-            &read_to_string(r#"C:\Users\103925pafr\Projekte\sapClient\destinations.json"#).unwrap(),
-        )
-        .unwrap()
+        self.dests = from_str(&read_to_string(&self.path).unwrap()).unwrap()
     }
     pub fn has_unencrypted_passwd(&self) -> bool {
         !self.dests_plain_text_passwd.is_empty()
@@ -44,7 +43,9 @@ impl DestinationManager {
         self.dests_plain_text_passwd = self
             .dests
             .iter()
-            .filter(|dest| dest.passwd != format!("{{{}}}", dest.sys_id))
+            .filter(|dest| {
+                dest.passwd.to_lowercase() != format!("{{{}}}", dest.sys_id.to_lowercase())
+            })
             .map(|dest| dest.clone())
             .collect();
     }
@@ -57,10 +58,7 @@ impl DestinationManager {
     }
 
     pub fn write(&self) {
-        write(
-            "destinations.json",
-            serde_json::to_string(&self.dests).unwrap(),
-        );
+        write(&self.path, serde_json::to_string(&self.dests).unwrap());
     }
 
     pub fn get_dests_plain_passwd(&self) -> &Vec<Destination> {

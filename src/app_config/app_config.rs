@@ -24,21 +24,45 @@ pub struct AppConfig {
 
 impl AppConfig {
     pub fn init() -> Self {
+        let get_path = |filename: &str| {
+            format!(
+                "{}\\sapCli\\{}",
+                std::env::var("APPDATA").unwrap(),
+                filename
+            )
+        };
+        println!("{}", get_path(""));
+        if !std::path::Path::new(&get_path("")).exists() {
+            std::fs::create_dir(&get_path(""));
+        }
+
         let mut conf = AppConfig {
             config: Ini::new(),
             sessions_config: Ini::new(),
-            password_manager: PasswordManager::init(),
-            destination_manager: DestinationManager::init(),
+            password_manager: PasswordManager::init(get_path("shadow.ini")),
+            destination_manager: DestinationManager::init(get_path("destinations.json")),
         };
-        if conf.config.load("settings.ini").is_err() {
-            std::fs::File::create("settings.ini");
+
+        println!("{}", get_path("sessions.ini"));
+        if conf.config.load(&get_path("settings.ini")).is_err() {
+            std::fs::File::create(&get_path("settings.ini"));
             conf.set_default_sys("ITK");
 
             conf.update_file();
         }
-        if conf.sessions_config.load("sessions.ini").is_err() {
-            std::fs::File::create("sessions.ini");
+        if conf
+            .sessions_config
+            .load(&get_path("sessions.ini"))
+            .is_err()
+        {
+            std::fs::File::create(&get_path("sessions.ini"));
         }
+
+        // let dir_path = format!(
+        //     "{}\\sapCli\\{}",
+        //     std::env::var("APPDATA").unwrap(),
+        //     filename
+        // );
 
         conf.check_destinations();
 
@@ -169,7 +193,14 @@ impl AppConfig {
     }
 
     pub fn update_file(&mut self) {
-        self.sessions_config.write("sessions.ini");
+        let get_path = |filename: &str| {
+            format!(
+                "{}\\sapCli\\{}",
+                std::env::var("APPDATA").unwrap(),
+                filename
+            )
+        };
+        self.sessions_config.write(&get_path("sessions.ini"));
     }
     pub fn get_destination_from_sys(&self, sys_id: &str) -> Option<Destination> {
         let mut dest = self
