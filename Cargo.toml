@@ -12,7 +12,7 @@ path = "src/lib.rs"
 reqwest = { version = "0.11.5", features = ["cookies"] }
 tokio = { version = "1.12.0", features = ["full"] }
 cli-table = "0.4"
-quick-xml = { version = "0.22.0", features = ["serde", "serialize"] }
+quick-xml = { version = "0.23.0-alpha3", features = ["serde", "serialize"] }
 minidom = "0.13.0"
 serde = { version = "1.0", features = [ "derive" ] }
 clap = { version = "3.0.0-beta.5", features = ["yaml"] }

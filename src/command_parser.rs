@@ -1,12 +1,13 @@
 use async_trait::async_trait;
 use clap::ArgMatches;
 use sap_adt_bindings::{
+    app_config::AppConfig,
     config::{
         class_config::{ClassConfig, ClassError, ClassResponse},
         freestyle_config::{FreeStyleConfig, FreeStyleError, FreeStyleResponse},
         program_config::{
-            ConfigCopyProgram, ConfigCreateProgram, ConfigCreateTable, ConfigDeleteProgram,
-            ProgramError, ProgramResponse,
+            ConfigCopyDatabaseTable, ConfigCopyProgram, ConfigCreateProgram, ConfigCreateTable,
+            ConfigDeleteProgram, ProgramError, ProgramResponse,
         },
         AdtError, AdtResponse, Config, Responses, SAPClient, Sendable, SendableConfig,
     },
@@ -15,7 +16,9 @@ use sap_adt_bindings::{
 
 pub mod command_match_parser {}
 
-pub struct CommandMatchParser {}
+pub struct CommandMatchParser<'a> {
+    config: &'a AppConfig,
+}
 
 // struct TableCommand {
 //     config: FreeStyleConfig,
@@ -57,7 +60,8 @@ fn parse_create_program_command(matches: &ArgMatches) -> Box<dyn SendableConfig>
         matches.value_of("transport"),
     ))
 }
-fn parse_copy_command(matches: &ArgMatches) -> Box<dyn SendableConfig> {
+
+fn parse_copy_prog_command(matches: &ArgMatches) -> Box<dyn SendableConfig> {
     Box::new(ConfigCopyProgram::new(
         matches.value_of("name").unwrap(),
         matches.value_of("package").unwrap(),
@@ -129,9 +133,44 @@ fn parse_class_command(matches: &ArgMatches) -> Box<dyn SendableConfig> {
 //     }
 // }
 
-impl CommandMatchParser {
-    pub fn new() -> CommandMatchParser {
-        CommandMatchParser {}
+impl<'a> CommandMatchParser<'a> {
+    pub fn new(config: &AppConfig) -> CommandMatchParser {
+        CommandMatchParser { config }
+    }
+    fn parse_copy_database_command(&self, matches: &ArgMatches) -> Box<dyn SendableConfig> {
+        Box::new(ConfigCopyDatabaseTable::new(
+            matches.value_of("source").unwrap(),
+            &self
+                .config
+                .get_destination_from_sys(matches.value_of("destination").unwrap())
+                .unwrap(),
+            matches.value_of("package").unwrap(),
+            matches.value_of("transport").unwrap(),
+        ))
+    }
+    pub fn parse(&self, args: &ArgMatches) -> Box<dyn SendableConfig> {
+        // type x = <C as Sendable<FreeStyleResponse, FreeStyleError>>
+
+        match &args.subcommand() {
+            &Some(("table", matches)) => parse_table_command(matches),
+            &Some(("sql", matches)) => parse_sql_command(matches),
+            &Some(("new", new_matches)) => match new_matches.subcommand() {
+                Some(("prog", matches)) => parse_create_program_command(matches),
+                Some(("class", matches)) => parse_class_command(matches),
+                Some(("tab", matches)) => parse_new_table_command(matches),
+                Some((_, _)) => panic!(""),
+                None => panic!(""),
+            },
+            &Some(("copy", matches)) => match matches.subcommand() {
+                Some(("prog", matches)) => parse_copy_prog_command(matches),
+                Some(("tab", matches)) => self.parse_copy_database_command(matches),
+                Some((&_, _)) => panic!(""),
+                None => panic!(""),
+            },
+            &Some(("delete", matches)) => parse_delete_program_command(matches),
+            &Some((_, _)) => panic!(""),
+            None => panic!(""),
+        }
     }
 }
 // trait NewTrait: Config + SendWith {}
@@ -180,27 +219,43 @@ impl CommandMatchParser {
 // {
 // }
 // impl AdtError for Xxx {}
-impl CommandMatchParser {
-    pub fn parse(args: &ArgMatches) -> Box<dyn SendableConfig> {
-        // type x = <C as Sendable<FreeStyleResponse, FreeStyleError>>
+// impl CommandMatchParser {
+// fn parse_copy_database_command(&self, matches: &ArgMatches) -> Box<dyn SendableConfig> {
+//     Box::new(ConfigCopyDatabaseTable::new(
+//         matches.value_of("source").unwrap(),
+//         &self
+//             .config
+//             .get_destination_from_sys(matches.value_of("destination").unwrap())
+//             .unwrap(),
+//         matches.value_of("package").unwrap(),
+//         matches.value_of("transport").unwrap(),
+//     ))
+// }
+// pub fn parse(&self, args: &ArgMatches) -> Box<dyn SendableConfig> {
+//     // type x = <C as Sendable<FreeStyleResponse, FreeStyleError>>
 
-        match &args.subcommand() {
-            &Some(("table", matches)) => parse_table_command(matches),
-            &Some(("sql", matches)) => parse_sql_command(matches),
-            &Some(("new", new_matches)) => match new_matches.subcommand() {
-                Some(("prog", matches)) => parse_create_program_command(matches),
-                Some(("class", matches)) => parse_class_command(matches),
-                Some(("tab", matches)) => parse_new_table_command(matches),
-                Some((_, _)) => panic!(""),
-                None => panic!(""),
-            },
-            &Some(("copy", matches)) => parse_copy_command(matches),
-            &Some(("delete", matches)) => parse_delete_program_command(matches),
-            &Some((_, _)) => panic!(""),
-            None => panic!(""),
-        }
-    }
-}
+//     match &args.subcommand() {
+//         &Some(("table", matches)) => parse_table_command(matches),
+//         &Some(("sql", matches)) => parse_sql_command(matches),
+//         &Some(("new", new_matches)) => match new_matches.subcommand() {
+//             Some(("prog", matches)) => parse_create_program_command(matches),
+//             Some(("class", matches)) => parse_class_command(matches),
+//             Some(("tab", matches)) => parse_new_table_command(matches),
+//             Some((_, _)) => panic!(""),
+//             None => panic!(""),
+//         },
+//         &Some(("copy", matches)) => match matches.subcommand() {
+//             Some(("prog", matches)) => parse_copy_prog_command(matches),
+//             Some(("tab", matches)) => self.parse_copy_database_command(matches),
+//             Some((&_, _)) => panic!(""),
+//             None => panic!(""),
+//         },
+//         &Some(("delete", matches)) => parse_delete_program_command(matches),
+//         &Some((_, _)) => panic!(""),
+//         None => panic!(""),
+//     }
+// }
+// }
 
 // impl CommandParser for CommandMatchParser {
 //     fn parse(args: &ArgMatches) -> T {

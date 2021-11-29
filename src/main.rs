@@ -5,7 +5,9 @@ use crate::command_parser::CommandMatchParser;
 use crate::output_handler::{handle_error, handle_output};
 // use clap::AppSettings::{ArgRequiredElseHelp, SubcommandRequiredElseHelp};
 use clap::{load_yaml, App};
-use sap_adt_bindings::net::SAPClient;
+use sap_adt_bindings::config::program_config::{ConfigCopyDatabaseTable, ConfigGetTableDetails};
+use sap_adt_bindings::config::Sendable;
+use sap_adt_bindings::net::{Destination, SAPClient};
 
 pub mod command_parser;
 pub mod output_handler;
@@ -17,21 +19,35 @@ async fn main() {
     let cli_yaml = load_yaml!("cli.yaml");
     let mut app = App::from(cli_yaml);
 
-    // Check manually if no argument was given because clap throws exit code 2
+    // Check if no argument was given because clap throws exit code 2
     if args_os().count() == 1 {
         app.print_help().expect("Could not print help");
         exit(0);
     }
 
     let matches = app.get_matches();
-
-    let mut config = CommandMatchParser::parse(&matches);
-
+    // let mut config = ConfigCopyDatabaseTable::new(
+    //     "ZHRE_0024",
+    //     &Destination {
+    //         host: String::from("https://hamerpiea.zalaris.de"),
+    //         port: 443,
+    //         sys_id: String::from("IEA"),
+    //         uname: String::from("PFRANK"),
+    //         passwd: String::from("Start1234$"),
+    //         mandt: String::from("200"),
+    //         lang: String::from("DE"),
+    //     },
+    //     "Z_PFRANK",
+    //     "IEAK908900",
+    // );
     let mut app_conf = AppConfig::init();
+
+    let mut config = CommandMatchParser::new(&app_conf).parse(&matches);
+
     let mut client: SAPClient;
 
     let dest = app_conf.get_default_destination();
-    println!("{:?}", dest);
+    // println!("{:?}", dest);
     let update_session_file: bool;
 
     if let Some(session) = app_conf.get_session_from_sys(&dest.sys_id) {

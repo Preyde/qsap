@@ -14,7 +14,6 @@ use crate::crypt::Crypt;
 
 pub mod app_config {}
 
-///
 pub struct AppConfig {
     config: Ini,
     password_manager: PasswordManager,
@@ -31,7 +30,7 @@ impl AppConfig {
                 filename
             )
         };
-        println!("{}", get_path(""));
+        // println!("{}", get_path(""));
         if !std::path::Path::new(&get_path("")).exists() {
             std::fs::create_dir(&get_path(""));
         }
@@ -43,7 +42,7 @@ impl AppConfig {
             destination_manager: DestinationManager::init(get_path("destinations.json")),
         };
 
-        println!("{}", get_path("sessions.ini"));
+        // println!("{}", get_path("sessions.ini"));
         if conf.config.load(&get_path("settings.ini")).is_err() {
             std::fs::File::create(&get_path("settings.ini"));
             conf.set_default_sys("ITK");
@@ -211,7 +210,7 @@ impl AppConfig {
             .clone();
 
         self.decrypt_password(&mut dest);
-        println!("{:?}", dest);
+        // println!("{:?}", dest);
         Some(dest)
     }
 

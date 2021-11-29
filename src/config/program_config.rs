@@ -1,6 +1,12 @@
 use std::fmt::Error;
 
-use crate::{data::abap_prog::AbapProg, net::Destination};
+use crate::{
+    data::{
+        abap_prog::AbapProg,
+        abap_table::{Dd02v, Dd03pStruc, Dd09l, SoapResponse, XmlTest, DD03P_TAB},
+    },
+    net::Destination,
+};
 
 use super::{
     AdtError, AdtResponse, Config, LockHandle, Responses, SAPClient, Sendable, SendableConfig,
@@ -99,7 +105,7 @@ impl Sendable for ConfigCopyProgramToSys {
             lang: String::from("DE"),
         });
 
-        println!("{}", &conf_get_source.get_source().unwrap());
+        // println!("{}", &conf_get_source.get_source().unwrap());
         client.set_stateful(true);
         client.clear_session();
         ConfigCreateProgram::new(&self.prog_name, None, None)
@@ -172,16 +178,16 @@ impl Sendable for ConfigUpdateProgramSource {
 
         let xml = lock_handle_res.text().await.unwrap();
 
-        println!("{:?}", &xml);
+        // println!("{:?}", &xml);
         let lock_handle: LockHandleResponse = quick_xml::de::from_str(&xml).unwrap();
-        println!("{:?}", lock_handle);
+        // println!("{:?}", lock_handle);
         self.lock_handle = Some(lock_handle.values.DATA.LOCK_HANDLE);
         let res = client.put(self).await;
 
         client.unlock(self).await;
 
-        println!("{}", res.status());
-        println!("{}", res.text().await.unwrap());
+        // println!("{}", res.status());
+        // println!("{}", res.text().await.unwrap());
         // self.source = res.text().await.ok();
         Ok(())
     }
@@ -223,7 +229,7 @@ impl Sendable for ConfigGetProgramSource {
     async fn send_with(&mut self, client: &mut SAPClient) -> Result<(), AdtError> {
         let res = client.get(self).await;
 
-        println!("{}", res.status());
+        // println!("{}", res.status());
 
         self.source = res.text().await.ok();
         Ok(())
@@ -415,7 +421,7 @@ impl Sendable for ConfigCreateProgram {
             Ok(_text) => Some(String::from("Program created")),
             Err(_e) => return Err(AdtError::new("Program couldnt be created")),
         };
-        println!("{}", self.text.as_ref().unwrap());
+        // println!("{}", self.text.as_ref().unwrap());
         Ok(())
     }
 
@@ -439,8 +445,8 @@ impl Config for ConfigCopyProgram {
 impl Sendable for ConfigCopyProgram {
     async fn send_with(&mut self, client: &mut SAPClient) -> Result<(), AdtError> {
         let res = client.send(self).await;
-        println!("{}", res.status());
-        println!("{}", res.text().await.unwrap());
+        // println!("{}", res.status());
+        // println!("{}", res.text().await.unwrap());
         Ok(())
     }
     fn get_response(&self) -> Option<Responses> {
@@ -492,8 +498,8 @@ impl SendableConfig for ConfigExecuteProgram {}
 impl Sendable for ConfigExecuteProgram {
     async fn send_with(&mut self, client: &mut SAPClient) -> Result<(), AdtError> {
         let res = client.send(self).await;
-        println!("{}", res.status());
-        println!("{}", res.text().await.unwrap());
+        // println!("{}", res.status());
+        // println!("{}", res.text().await.unwrap());
         Ok(())
     }
     fn get_response(&self) -> Option<Responses> {
@@ -555,28 +561,37 @@ impl Sendable for ConfigCreateTable {
             .add_line("wa_field-position = '1'.")
             .add_line("wa_field-rollname = 'CHAR10'.")
             .add_line("APPEND wa_field TO lt_fields.")
-            .add_line("CALL FUNCTION 'DDIF_TABL_PUT'")
-            .add_line("  EXPORTING")
-            .add_line(&format!("name              = '{}'", self.tab_name))
-            .add_line("    dd02v_wa          = table_header")
-            .add_line("    dd09l_wa          = techn_set")
-            .add_line("  TABLES")
-            .add_line("    dd03p_tab         = lt_fields")
-            .add_line("  EXCEPTIONS")
-            .add_line("    tabl_not_found    = 1")
-            .add_line("    name_inconsistent = 2")
-            .add_line("    tabl_inconsistent = 3")
-            .add_line("    put_failure       = 4")
-            .add_line("    put_refused       = 5")
-            .add_line("    OTHERS            = 6.")
+            .add_function_call("DDIF_TABL_PUT")
+            .exporting("name", &format!("'{}'", self.tab_name))
+            .tables("dd03p_tab", "lt_fields")
+            .dot()
+            .add_function_call("DDIF_TABL_PUT")
+            .exporting("dd02v_wa", "table_header")
+            .exporting("dd09l_wa", "techn_set")
+            .tables("dd03p_tab", "lt_fields")
+            .dot()
+            // .add_line("CALL FUNCTION 'DDIF_TABL_PUT'")
+            // .add_line("EXPORTING")
+            // .add_line(&format!("name = '{}'", self.tab_name))
+            // .add_line("dd02v_wa = table_header")
+            // .add_line("dd09l_wa = techn_set")
+            // .add_line("TABLES")
+            // .add_line("dd03p_tab = lt_fields.")
+            // .add_line("  EXCEPTIONS")
+            // .add_line("    tabl_not_found    = 1")
+            // .add_line("    name_inconsistent = 2")
+            // .add_line("    tabl_inconsistent = 3")
+            // .add_line("    put_failure       = 4")
+            // .add_line("    put_refused       = 5")
+            // .add_line("    OTHERS            = 6.")
             .add_line("CALL FUNCTION 'DDIF_TABL_ACTIVATE'")
-            .add_line("  EXPORTING")
-            .add_line(&format!("    name        = '{}'", self.tab_name))
-            .add_line("  EXCEPTIONS")
-            .add_line("NOT_FOUND   = 1")
-            .add_line("")
-            .add_line("   PUT_FAILURE = 2")
-            .add_line("    OTHERS      = 3.");
+            .add_line("EXPORTING")
+            .add_line(&format!("name = '{}'.", self.tab_name));
+        // .add_line("  EXCEPTIONS")
+        // .add_line("NOT_FOUND   = 1")
+        // .add_line("")
+        // .add_line("   PUT_FAILURE = 2")
+        // .add_line("    OTHERS      = 3.");
 
         ConfigExecuteProgram::new(&prog).send_with(client).await;
 
@@ -594,3 +609,195 @@ impl Config for ConfigCreateTable {
         self.path.clone()
     }
 }
+#[derive(Debug)]
+pub struct ConfigGetTableDetails {
+    path: String,
+    body: String,
+    data: Option<SoapResponse>,
+}
+impl Config for ConfigGetTableDetails {
+    fn get_body(&self) -> String {
+        self.body.clone()
+    }
+    fn get_path(&self) -> String {
+        self.path.clone()
+    }
+}
+impl ConfigGetTableDetails {
+    pub fn new(tab_name: &str) -> Self {
+        ConfigGetTableDetails {
+            data: None,
+            path: String::from("/sap/bc/soap/rfc"),
+            body: format!(
+                r#"<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:x="urn:sap-com:document:sap:rfc:functions">
+            <SOAP-ENV:Header></SOAP-ENV:Header>
+            <SOAP-ENV:Body>
+                <x:BDL_DDIF_TABL_GET>
+                    <NAME>{}</NAME>
+        
+                    <DD03P_TAB/>
+                </x:BDL_DDIF_TABL_GET>
+            </SOAP-ENV:Body>
+        </SOAP-ENV:Envelope>"#,
+                tab_name
+            ),
+        }
+    }
+    fn get_data(&self) -> Option<&SoapResponse> {
+        self.data.as_ref()
+    }
+}
+impl SendableConfig for ConfigGetTableDetails {}
+#[async_trait]
+impl Sendable for ConfigGetTableDetails {
+    async fn send_with(&mut self, client: &mut SAPClient) -> Result<(), AdtError> {
+        let res = client.send(self).await;
+        let text = &res.text().await.unwrap();
+        // println!("{:?}", &text);
+        let data: SoapResponse = quick_xml::de::from_str(text).unwrap();
+        self.data = Some(data);
+        // println!("{:?}", data);
+        Ok(())
+    }
+    fn get_response(&self) -> Option<Responses> {
+        Some(Responses::Class("".to_string()))
+    }
+}
+#[derive(Debug)]
+struct ConfigPutTableDetails {
+    body: String,
+    path: String,
+}
+impl Config for ConfigPutTableDetails {
+    fn get_body(&self) -> String {
+        self.body.clone()
+    }
+    fn get_path(&self) -> String {
+        self.path.clone()
+    }
+}
+impl ConfigPutTableDetails {
+    pub fn new(
+        tab_name: &str,
+        dd02v: &Dd02v,
+        dd09l: &Dd09l,
+        dd03p: &DD03P_TAB,
+        package: &str,
+        reqnum: &str,
+    ) -> Self {
+        ConfigPutTableDetails {
+            path: String::from("/sap/bc/soap/rfc"),
+            body: format!(
+                r#"<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:x="urn:sap-com:document:sap:rfc:functions">
+            <SOAP-ENV:Header></SOAP-ENV:Header>
+            <SOAP-ENV:Body>
+                <x:ITSAMCG_DDIF_TABL_PUT>
+                <REQNUM>{}</REQNUM>
+                <SRCSYSTEM>ITK</SRCSYSTEM>
+                <DEVCLASS>{}</DEVCLASS>
+                <TYPENAME>TABL</TYPENAME>
+                 <NAME>{}</NAME>
+                 {}{}{}
+        </x:ITSAMCG_DDIF_TABL_PUT>
+        </SOAP-ENV:Body>
+    </SOAP-ENV:Envelope>"#,
+                reqnum,
+                package,
+                tab_name,
+                quick_xml::se::to_string(dd02v).unwrap(),
+                quick_xml::se::to_string(dd09l).unwrap(),
+                quick_xml::se::to_string(dd03p).unwrap()
+            ), // body: format!(
+               //     r#"<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:x="urn:sap-com:document:sap:rfc:functions">
+               // <SOAP-ENV:Header></SOAP-ENV:Header>
+               // <SOAP-ENV:Body>
+               //     <x:ITSAMCG_DDIF_TABL_PUT>"#,
+               //     body
+               // ),S
+        }
+    }
+}
+impl SendableConfig for ConfigPutTableDetails {}
+#[async_trait]
+impl Sendable for ConfigPutTableDetails {
+    async fn send_with(&mut self, client: &mut SAPClient) -> Result<(), AdtError> {
+        // println!("{}", self.body);
+        let res = client.send(self).await;
+        let text = &res.text().await.unwrap();
+
+        // println!("{:?}", &text);
+        // let data: SoapResponse = quick_xml::de::from_str(text).unwrap();
+
+        // println!("{:?}", data);
+        Ok(())
+    }
+    fn get_response(&self) -> Option<Responses> {
+        Some(Responses::Class("".to_string()))
+    }
+}
+#[derive(Debug)]
+pub struct ConfigCopyDatabaseTable {
+    body: String,
+    path: String,
+    tab_name: String,
+    dest: Destination,
+    package: String,
+    reqnum: String,
+}
+impl Config for ConfigCopyDatabaseTable {
+    fn get_body(&self) -> String {
+        self.body.clone()
+    }
+    fn get_path(&self) -> String {
+        self.path.clone()
+    }
+}
+impl ConfigCopyDatabaseTable {
+    pub fn new(tab_name: &str, dest: &Destination, package: &str, reqnum: &str) -> Self {
+        ConfigCopyDatabaseTable {
+            path: String::from("/sap/bc/soap/rfc"),
+            tab_name: tab_name.to_string(),
+            dest: dest.clone(),
+            body: "".to_string(),
+            package: package.to_string(),
+            reqnum: reqnum.to_string(),
+        }
+    }
+}
+
+#[async_trait]
+impl Sendable for ConfigCopyDatabaseTable {
+    async fn send_with(&mut self, client: &mut SAPClient) -> Result<(), AdtError> {
+        // let res = client.send(self).await;
+        // let text = &res.text().await.unwrap();
+        let mut get_table_details = ConfigGetTableDetails::new(&self.tab_name);
+        get_table_details.send_with(client).await.unwrap();
+
+        let details = get_table_details.get_data().unwrap();
+
+        client.set_destination(&self.dest);
+        let res = &details.body.response;
+        // let body = &quick_xml::se::to_string(&details).unwrap();
+        // println!("{}", &body);
+        let mut put_table_details = ConfigPutTableDetails::new(
+            &self.tab_name,
+            &res.dd02v,
+            &res.dd09l,
+            &res.fields,
+            &self.package,
+            &self.reqnum,
+        );
+
+        put_table_details.send_with(client).await;
+        // println!("{:?}", &text);
+        // let data: SoapResponse = quick_xml::de::from_str(text).unwrap();
+
+        // println!("{:?}", data);
+        Ok(())
+    }
+    fn get_response(&self) -> Option<Responses> {
+        Some(Responses::Class("".to_string()))
+    }
+}
+impl SendableConfig for ConfigCopyDatabaseTable {}
+// impl SendableConfig for ConfigPutTableDetails {}
