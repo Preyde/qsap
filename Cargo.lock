@@ -450,6 +450,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "format_xml"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5097a466b5aedccef20567540dccd03b831a9cf1a30970c491b8a2aef2528bd4"
+
+[[package]]
 name = "fuchsia-cprng"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1314,6 +1320,7 @@ dependencies = [
  "cli-table",
  "crossterm",
  "csv",
+ "format_xml",
  "heapless",
  "ini",
  "minidom",

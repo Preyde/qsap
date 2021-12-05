@@ -1,6 +1,8 @@
 // use crate::config::Sendable;
-use crate::config::{AdtError, AdtResponse, Config, LockHandle, Responses, SendableConfig};
-use reqwest::{header::HeaderMap, Client, Response};
+use crate::config::{
+    self, AdtError, AdtResponse, Config, Lock, LockHandle, Responses, SendableConfig,
+};
+use reqwest::{header::HeaderMap, Client, Method, Response};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display};
 #[derive(Debug)]
@@ -209,6 +211,58 @@ impl SAPClient {
             .await
             .unwrap()
     }
+    pub async fn request(&mut self, config: &Box<&dyn config::Request>) -> Response {
+        if self.session.is_none() {
+            self.fetch_csrf_token().await;
+            println!("{:?}", self.headers.as_ref().unwrap());
+            self.session = Some(Session {
+                csrf_token: self
+                    .headers
+                    .as_ref()
+                    .unwrap()
+                    .get("x-csrf-token")
+                    .unwrap()
+                    .clone()
+                    .unwrap(),
+                session_type: if self.stateful {
+                    "stateful".to_string()
+                } else {
+                    "stateless".to_string()
+                },
+                session_cookie: self
+                    .cookies
+                    .get(&self.get_session_cookie_name())
+                    .unwrap()
+                    .clone(), //  session_cookie:
+            });
+        }
+
+        let url = format!("{0}{1}", &self.host, &config.get_path());
+
+        self.client
+            .request(config.get_method(), self.append_mandt_to_url(&url))
+            .basic_auth(&self.dest.uname, Some(&self.dest.passwd))
+            .header(
+                "x-csrf-token",
+                self.session.as_ref().unwrap().csrf_token.clone(),
+            )
+            .header(
+                "Cookie",
+                format!(
+                    "{}={}",
+                    &self.get_session_cookie_name(),
+                    self.session.as_ref().unwrap().session_cookie
+                ),
+            )
+            .header(
+                "X-sap-adt-sessiontype",
+                &self.session.as_ref().unwrap().session_type,
+            )
+            .body(String::from(config.get_body()))
+            .send()
+            .await
+            .unwrap()
+    }
     fn get_session_cookie_name(&self) -> String {
         format!("SAP_SESSIONID_{}_{}", self.dest.sys_id, self.dest.mandt)
     }
@@ -241,7 +295,7 @@ impl SAPClient {
             });
         }
 
-        let url = format!("{0}{1}", &self.host, lock_handle.get_lock_handle_path());
+        let url = format!("{0}{1}", &self.host, lock_handle.get_lock_path());
 
         self.client
             .post(self.append_mandt_to_url(&url))

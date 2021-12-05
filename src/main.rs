@@ -5,8 +5,10 @@ use crate::command_parser::CommandMatchParser;
 use crate::output_handler::{handle_error, handle_output};
 // use clap::AppSettings::{ArgRequiredElseHelp, SubcommandRequiredElseHelp};
 use clap::{load_yaml, App};
-use sap_adt_bindings::config::program_config::{ConfigCopyDatabaseTable, ConfigGetTableDetails};
-use sap_adt_bindings::config::Sendable;
+use sap_adt_bindings::config::program_config::{
+    ConfigCopyDatabaseTable, ConfigGetTableDetails, Program,
+};
+use sap_adt_bindings::config::{Create, Sendable};
 use sap_adt_bindings::net::{Destination, SAPClient};
 
 pub mod command_parser;
@@ -41,7 +43,8 @@ async fn main() {
     //     "IEAK908900",
     // );
     let mut app_conf = AppConfig::init();
-
+    // let mut prog = Program::new("ZPF_1511_2", None, None);
+    // let mut config = prog.create();
     let mut config = CommandMatchParser::new(&app_conf).parse(&matches);
 
     let mut client: SAPClient;
