@@ -10,6 +10,6 @@ pub fn handle_output(response: Responses) {
     }
 }
 
-pub fn handle_error(error: AdtError) {
+pub fn handle_error(error: &AdtError) {
     println!("{}", error);
 }

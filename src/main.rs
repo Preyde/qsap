@@ -8,7 +8,7 @@ use clap::{load_yaml, App};
 use sap_adt_bindings::config::program_config::{
     ConfigCopyDatabaseTable, ConfigGetTableDetails, Program,
 };
-use sap_adt_bindings::config::{Create, Sendable};
+use sap_adt_bindings::config::{CopyToSys, Create, SendWith, Sendable};
 use sap_adt_bindings::net::{Destination, SAPClient};
 
 pub mod command_parser;
@@ -42,10 +42,21 @@ async fn main() {
     //     "Z_PFRANK",
     //     "IEAK908900",
     // );
+
     let mut app_conf = AppConfig::init();
     // let mut prog = Program::new("ZPF_1511_2", None, None);
     // let mut config = prog.create();
-    let mut config = CommandMatchParser::new(&app_conf).parse(&matches);
+    // let mut config = CommandMatchParser::new(&app_conf).parse(&matches);
+    let mut prog = Program::new("ZPF_1114", None, None);
+    let dest2 = Destination {
+        host: String::from("https://hamerpiea.zalaris.de"),
+        port: 443,
+        sys_id: String::from("IEA"),
+        uname: String::from("PFRANK"),
+        passwd: String::from("Start1234$"),
+        mandt: String::from("200"),
+        lang: String::from("DE"),
+    };
 
     let mut client: SAPClient;
 
@@ -60,11 +71,15 @@ async fn main() {
         client = SAPClient::new(&dest);
         update_session_file = true;
     }
-
-    match config.send_with(&mut client).await {
-        Ok(()) => handle_output(config.get_response().unwrap()),
-        Err(e) => handle_error(e),
-    }
+    // prog.create().send_with(&mut client).await;
+    let mut xxx = prog.copy_to_sys(&dest2);
+    xxx.send_with(&mut client).await;
+    // prog.copy_to_sys(&dest).send_with(&mut client);
+    // config.send_with(&mut client);
+    // match &config.send_with(&mut client).await {
+    //     Ok(()) => std::process::exit(0), //handle_output(config.get_response().unwrap()),
+    //     Err(e) => handle_error(e),
+    // }
 
     if update_session_file {
         app_conf.set_session_for_sys("ITK", &client.get_session().unwrap());

@@ -5,8 +5,9 @@ use sap_adt_bindings::{
     config::{
         class_config::{ClassConfig, ClassError, ClassResponse},
         freestyle_config::{FreeStyleConfig, FreeStyleError, FreeStyleResponse},
-        program_config::ConfigCopyDatabaseTable,
-        AdtError, AdtResponse, Config, Responses, SAPClient, Sendable, SendableConfig,
+        program_config::{ConfigCopyDatabaseTable, Program},
+        AdtError, AdtResponse, Config, CopyTo, Create, Request, Responses, SAPClient, SendWith,
+        Sendable, SendableConfig,
     },
     data::abap_table::ABAPTable,
 };
@@ -15,6 +16,7 @@ pub mod command_match_parser {}
 
 pub struct CommandMatchParser<'a> {
     config: &'a AppConfig,
+    // program: Program,
 }
 
 // struct TableCommand {
@@ -50,15 +52,43 @@ pub struct ClassCommandParser {}
 // ))
 // }
 
-// fn parse_create_program_command(matches: &ArgMatches) -> Box<dyn SendableConfig> {
-// Box::new(ConfigCreateProgram::new(
-//     matches.value_of("name").unwrap(),
-//     matches.value_of("package"),
-//     matches.value_of("transport"),
-// ))
+// fn parse_create_program_command<'a>(matches: &'a ArgMatches) -> Box<dyn SendWith<'a>> {
+//     Program::new(
+//         matches.value_of("name").unwrap(),
+//         matches.value_of("package"),
+//         matches.value_of("transport"),
+//         // match matches.value_of("package") {
+//         //     Some(v) => Some(v.to_string()),
+//         //     None => None,
+//         // },
+//         // match matches.value_of("transport") {
+//         //     Some(v) => Some(v.to_string()),
+//         //     None => None,
+//         // },
+//     )
+//     .create()
+//     // Box::new(ConfigCreateProgram::new(
+//     //     matches.value_of("name").unwrap(),
+//     //     matches.value_of("package"),
+//     //     matches.value_of("transport"),
+//     // ))
 // }
 
-// fn parse_copy_prog_command(matches: &ArgMatches) -> Box<dyn SendableConfig> {
+// fn parse_copy_prog_command<'a>(matches: &'a ArgMatches) -> Box<dyn SendWith<'a>> {
+//     Program::new(
+//         matches.value_of("source").unwrap(),
+//         matches.value_of("package"),
+//         matches.value_of("transport"),
+//         // match matches.value_of("package") {
+//         //     Some(v) => Some(v.to_string()),
+//         //     None => None,
+//         // },
+//         // match matches.value_of("transport") {
+//         //     Some(v) => Some(v.to_string()),
+//         //     None => None,
+//         // },
+//     )
+//     .copy_to(matches.value_of("name").unwrap())
 //     // Box::new(ConfigCopyProgram::new(
 //     //     matches.value_of("name").unwrap(),
 //     //     matches.value_of("package").unwrap(),
@@ -145,7 +175,7 @@ impl<'a> CommandMatchParser<'a> {
             matches.value_of("transport").unwrap(),
         ))
     }
-    pub fn parse(&self, args: &ArgMatches) -> Box<dyn SendableConfig> {
+    pub fn parse(&self, args: &'a ArgMatches) -> Box<dyn SendWith> {
         // type x = <C as Sendable<FreeStyleResponse, FreeStyleError>>
 
         match &args.subcommand() {
@@ -160,7 +190,7 @@ impl<'a> CommandMatchParser<'a> {
             },
             &Some(("copy", matches)) => match matches.subcommand() {
                 // Some(("prog", matches)) => parse_copy_prog_command(matches),
-                Some(("tab", matches)) => self.parse_copy_database_command(matches),
+                // Some(("tab", matches)) => self.parse_copy_database_command(matches),
                 Some((&_, _)) => panic!(""),
                 None => panic!(""),
             },

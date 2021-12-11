@@ -49,7 +49,7 @@ impl Config for ClassConfig {
 #[async_trait]
 impl Sendable for ClassConfig {
     async fn send_with(&mut self, client: &mut SAPClient) -> Result<(), AdtError> {
-        let res = client.send(self).await;
+        // let res = client.send(self).await;
         Ok(())
         // Ok(res.text().await.unwrap())
     }

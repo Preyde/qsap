@@ -41,6 +41,12 @@ subcommands:
         about: Create new development object
         version: "1.3"
         author: Someone E. <someone_else@other.com>
+  
+        args: 
+        - test:
+            global: true
+            takes_value: true
+            
         subcommands:
         - prog:
             about: Create new program
@@ -126,6 +132,11 @@ subcommands:
                 about: Name of Database Table
                 required: true
                 takes_value: true
+            - name:
+                long: name
+                required: false
+                about: Name of program
+                takes_value: true
             - destination:
                 short: d
                 long: dest
@@ -139,15 +150,10 @@ subcommands:
                 short: t
             - package:
                 about: Paket
-                required: true
+                required: false
                 takes_value: true
                 short: p
-            - name:
-                short: n
-                long: name
-                required: false
-                about: Name of program
-                takes_value: true
+
         - prog:
             args:
             - source:
@@ -166,12 +172,13 @@ subcommands:
                 short: t
             - package:
                 about: Paket
-                required: true
+             
                 takes_value: true
                 short: p
             - name:
                 about: Name of program
                 required: false
                 takes_value: true
-                short: n
-                long: name
+         
+               
+

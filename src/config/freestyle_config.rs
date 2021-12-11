@@ -40,19 +40,19 @@ impl Config for FreeStyleConfig {
 #[async_trait]
 impl Sendable for FreeStyleConfig {
     async fn send_with(&mut self, client: &mut SAPClient) -> Result<(), AdtError> {
-        let res = client.send(self).await;
+        // let res = client.send(self).await;
 
-        let xml = res.text().await.unwrap();
+        // let xml = res.text().await.unwrap();
 
-        let table_data: TableData = match quick_xml::de::from_str(&xml) {
-            Ok(data) => data,
-            Err(_e) => return Err(AdtError::new("Table does not exist")),
-        };
+        // let table_data: TableData = match quick_xml::de::from_str(&xml) {
+        //     Ok(data) => data,
+        //     Err(_e) => return Err(AdtError::new("Table does not exist")),
+        // };
 
-        let mut abap_table = ABAPTable::new(table_data);
+        // let mut abap_table = ABAPTable::new(table_data);
 
-        abap_table.build();
-        self.table = Some(abap_table);
+        // abap_table.build();
+        // self.table = Some(abap_table);
         Ok(())
         // Ok(abap_table)
     }
