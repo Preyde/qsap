@@ -2,8 +2,11 @@ pub mod class_config;
 pub mod freestyle_config;
 pub mod program_config;
 pub mod strategy;
+pub mod table;
 
 use std::{
+    any::Any,
+    convert::TryFrom,
     error::Error,
     fmt::{self, Display, Formatter},
 };
@@ -11,6 +14,7 @@ use std::{
 pub use crate::net::SAPClient;
 use crate::{data::abap_table::ABAPTable, net::Destination};
 use async_trait::async_trait;
+use reqwest::{Body, StatusCode};
 
 use self::strategy::DefaultStrategy;
 
@@ -54,17 +58,31 @@ impl Error for AdtError {
     }
 }
 
-pub trait Create {
-    fn create(&self) -> DefaultStrategy;
+/// Used to create a Repository Object. First Type Parameter is the Response Type and the second the data contained in the response
+pub trait Create<T, U>
+where
+    T: Response<U> + TryFromAsync<reqwest::Response>,
+{
+    // fn create(&self) -> DefaultStrategy<T, U>;
+    fn create(&self) -> Box<dyn SendWith<T>>;
 }
-pub trait CopyTo {
-    fn copy_to(&mut self, target_name: &str) -> Box<dyn SendWith>;
+pub trait CopyTo<T, U>
+where
+    T: Response<U> + TryFromAsync<reqwest::Response>,
+{
+    fn copy_to(&mut self, target_name: &str) -> Box<dyn SendWith<T>>;
 }
-pub trait Delete {
-    fn delete(&mut self) -> Box<dyn SendWith>;
+pub trait Delete<T, U>
+where
+    T: Response<U> + TryFromAsync<reqwest::Response>,
+{
+    fn delete(&mut self) -> Box<dyn SendWith<T>>;
 }
-pub trait CopyToSys {
-    fn copy_to_sys<'a>(&'a self, dest: &Destination) -> Box<dyn SendWith + 'a>;
+pub trait CopyToSys<T, U>
+where
+    T: Response<U> + TryFromAsync<reqwest::Response>,
+{
+    fn copy_to_sys<'a>(&'a self, dest: &Destination) -> Box<dyn SendWith<T> + 'a>;
 }
 
 pub trait LockHandle {
@@ -72,7 +90,7 @@ pub trait LockHandle {
     fn get_unlock_path(&self) -> Option<String>;
     fn set_lock_handle(&mut self, lock_handle: &str);
 }
-
+#[derive(Debug)]
 pub struct LockObject {
     // lock_path: String,
     // unlock_path: String,
@@ -125,13 +143,27 @@ where
 }
 
 #[async_trait]
-pub trait SendWith: Send + Sync {
-    async fn send_with(&mut self, client: &mut SAPClient) -> Result<(), AdtError>;
+pub trait SendWith<T>: Sync + Send
+where
+    T: Sync + Send,
+{
+    async fn send_with(&mut self, client: &mut SAPClient) -> Result<T, AdtError>;
 }
 
-pub trait Source {
-    fn source(&self) -> Box<dyn Request>;
-    fn update_source(&self, source: &str) -> Box<dyn SendWith>;
+// trait IntoSendWith<T> {
+//     fn into_send_with(&self) -> dyn SendWith<T>;
+// }
+// impl<T> IntoSendWith<T> for SendWith<T> {
+//     fn into_send_with(&self) -> dyn SendWith<T> {
+//         self
+//     }
+// }
+pub trait Source<T, U>
+where
+    T: Response<U> + TryFromAsync<reqwest::Response> + Sync + Send,
+{
+    fn source(&self) -> Box<dyn SendWith<T>>;
+    fn update_source(&self, source: &str) -> Box<dyn SendWith<T>>;
     fn get_source(&self) -> String;
 }
 
@@ -161,6 +193,58 @@ pub trait Request: Sync + Send {
     fn get_body(&self) -> String;
     // async fn send_with(&mut self, client: &mut SAPClient) -> Result<(), AdtError>;
 }
+
+pub trait Response<T>: Sync + Send {
+    fn get_value(&self) -> T;
+    fn get_text(&self) -> String;
+    fn get_status(&self) -> StatusCode;
+}
+
+pub struct DefaultResponse {
+    body: String,
+    status: StatusCode,
+}
+
+impl Response<String> for DefaultResponse {
+    fn get_status(&self) -> StatusCode {
+        self.status
+    }
+    fn get_text(&self) -> String {
+        self.body.clone()
+    }
+    fn get_value(&self) -> String {
+        self.body.clone()
+    }
+}
+#[async_trait]
+pub trait TryFromAsync<T>
+where
+    Self: Sized,
+{
+    type Error;
+    async fn try_from_async(_: T) -> Result<Self, AdtError>;
+}
+
+#[async_trait]
+impl TryFromAsync<reqwest::Response> for DefaultResponse {
+    type Error = AdtError;
+
+    async fn try_from_async(res: reqwest::Response) -> Result<Self, AdtError> {
+        let status = res.status();
+        if let Ok(text) = res.text().await {
+            Ok(DefaultResponse { body: text, status })
+        } else {
+            Err(AdtError {
+                details: String::from("xxx"),
+            })
+        }
+    }
+}
+// impl<T> From<reqwest::Response> for Response<T> {
+//     fn from(res: reqwest::Response) -> Self {
+
+//     }
+// }
 
 pub trait AsReq {
     fn as_req(&self) -> Box<&dyn Request>;

@@ -1,3 +1,5 @@
+use std::{any::Any, marker::PhantomData};
+
 use async_trait::async_trait;
 use clap::ArgMatches;
 use sap_adt_bindings::{
@@ -6,17 +8,18 @@ use sap_adt_bindings::{
         class_config::{ClassConfig, ClassError, ClassResponse},
         freestyle_config::{FreeStyleConfig, FreeStyleError, FreeStyleResponse},
         program_config::{ConfigCopyDatabaseTable, Program},
-        AdtError, AdtResponse, Config, CopyTo, Create, Request, Responses, SAPClient, SendWith,
-        Sendable, SendableConfig,
+        AdtError, AdtResponse, Config, CopyTo, Create, Request, Response, Responses, SAPClient,
+        SendWith, Sendable, SendableConfig,
     },
     data::abap_table::ABAPTable,
 };
 
 pub mod command_match_parser {}
 
-pub struct CommandMatchParser<'a> {
+pub struct CommandMatchParser<'a, T, U> {
     config: &'a AppConfig,
-    // program: Program,
+    res: Option<T>,
+    result: Option<U>, // program: Program,
 }
 
 // struct TableCommand {
@@ -160,29 +163,42 @@ pub struct ClassCommandParser {}
 //     }
 // }
 
-impl<'a> CommandMatchParser<'a> {
-    pub fn new(config: &AppConfig) -> CommandMatchParser {
-        CommandMatchParser { config }
+impl<'a, T, U> CommandMatchParser<'a, T, U> {
+    pub fn new(config: &'a AppConfig) -> Self {
+        CommandMatchParser {
+            config,
+            res: None,
+            result: None,
+        }
     }
-    fn parse_copy_database_command(&self, matches: &ArgMatches) -> Box<dyn SendableConfig> {
-        Box::new(ConfigCopyDatabaseTable::new(
-            matches.value_of("source").unwrap(),
-            &self
-                .config
-                .get_destination_from_sys(matches.value_of("destination").unwrap())
-                .unwrap(),
-            matches.value_of("package").unwrap(),
-            matches.value_of("transport").unwrap(),
-        ))
-    }
-    pub fn parse(&self, args: &'a ArgMatches) -> Box<dyn SendWith> {
+    // fn parse_copy_database_command(&self, matches: &ArgMatches) -> Box<dyn SendableConfig> {
+    //     Box::new(ConfigCopyDatabaseTable::new(
+    //         matches.value_of("source").unwrap(),
+    //         &self
+    //             .config
+    //             .get_destination_from_sys(matches.value_of("destination").unwrap())
+    //             .unwrap(),
+    //         matches.value_of("package").unwrap(),
+    //         matches.value_of("transport").unwrap(),
+    //     ))
+    // }
+    pub fn parse(&self, args: &ArgMatches) -> Box<dyn SendWith<dyn Response<T>>>
+    where
+        T: Response<U>,
+    {
         // type x = <C as Sendable<FreeStyleResponse, FreeStyleError>>
 
         match &args.subcommand() {
             // &Some(("table", matches)) => parse_table_command(matches),
             // &Some(("sql", matches)) => parse_sql_command(matches),
             &Some(("new", new_matches)) => match new_matches.subcommand() {
-                // Some(("prog", matches)) => parse_create_program_command(matches),
+                Some(("prog", matches)) => Program::new(
+                    matches.value_of("prog_name").unwrap(),
+                    matches.value_of("package"),
+                    matches.value_of("transport"),
+                )
+                .create(),
+
                 // Some(("class", matches)) => parse_class_command(matches),
                 // Some(("tab", matches)) => parse_new_table_command(matches),
                 Some((_, _)) => panic!(""),

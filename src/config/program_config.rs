@@ -10,8 +10,9 @@ use crate::{
 
 use super::{
     strategy::{CopyToSysStrategy, DefaultStrategy, LockStrategy},
-    AdtError, AdtResponse, Config, CopyTo, CopyToSys, Create, Delete, Lock, LockHandle, LockObject,
-    Request, Responses, SAPClient, SendWith, Sendable, SendableConfig, Source,
+    AdtError, AdtResponse, Config, CopyTo, CopyToSys, Create, DefaultResponse, Delete, Lock,
+    LockHandle, LockObject, Request, Response, Responses, SAPClient, SendWith, Sendable,
+    SendableConfig, Source,
 };
 // use crate::config::Sendable;
 use async_trait::async_trait;
@@ -73,24 +74,24 @@ pub struct LockHandleResponse {
 //     path: String,
 //     prog_name: String,
 // }
-#[derive(Debug)]
-pub struct ConfigUpdateProgramSource {
-    body: String,
-    prog_name: String,
-    lock_handle: Option<String>,
-}
-#[derive(Debug)]
-pub struct ConfigCopyProgramToSys {
-    prog_name: String,
-}
+// #[derive(Debug)]
+// pub struct ConfigUpdateProgramSource {
+//     body: String,
+//     prog_name: String,
+//     lock_handle: Option<String>,
+// }
+// #[derive(Debug)]
+// pub struct ConfigCopyProgramToSys {
+//     prog_name: String,
+// }
 
-impl ConfigCopyProgramToSys {
-    pub fn new(prog_name: &str) -> Self {
-        ConfigCopyProgramToSys {
-            prog_name: String::from(prog_name),
-        }
-    }
-}
+// impl ConfigCopyProgramToSys {
+//     pub fn new(prog_name: &str) -> Self {
+//         ConfigCopyProgramToSys {
+//             prog_name: String::from(prog_name),
+//         }
+//     }
+// }
 #[derive(Debug)]
 pub struct Program {
     body: String,
@@ -308,48 +309,18 @@ impl Program {
         }
     }
 }
-impl CopyToSys for Program {
-    fn copy_to_sys<'a>(&'a self, dest: &Destination) -> Box<dyn SendWith + 'a> {
+impl CopyToSys<DefaultResponse, String> for Program {
+    fn copy_to_sys<'a>(&'a self, dest: &Destination) -> Box<dyn SendWith<DefaultResponse> + 'a> {
         Box::new(CopyToSysStrategy::new(
-            LockObject::new(&"/sap/bc/adt/programs/programs/"),
+            // LockObject::new(&"/sap/bc/adt/programs/programs/"),
             self,
             dest.clone(),
         ))
     }
 }
-// pub fn get_source(&mut self) -> Box<dyn Request> {
-//     Box::new(DefaultStrategy {
-//         body: String::new(),
-//         path: format!(
-//             "/sap/bc/adt/programs/programs/{}/source/main",
-//             self.prog_name
-//         ),
-//         method: Method::GET,
-//     })
 
-// #[async_trait]
-// impl Sendable for Program {
-//     async fn send_with(&mut self, client: &mut SAPClient) -> Result<(), AdtError> {
-//         let res = client.get(self).await;
-
-//         // println!("{}", res.status());
-
-//         self.source = res.text().await.ok();
-//         Ok(())
-//     }
-//     fn get_response(&self) -> Option<Responses> {
-//         Some(Responses::Program(String::from("")))
-//     }
-// }
-
-// self.path = format!(
-//     "/sap/bc/adt/programs/programs/{}/source/main",
-//     self.prog_name
-// );
-// }
-
-impl Source for Program {
-    fn source(&self) -> Box<dyn Request> {
+impl Source<DefaultResponse, String> for Program {
+    fn source(&self) -> Box<dyn SendWith<DefaultResponse>> {
         Box::new(DefaultStrategy::new(
             String::new(),
             format!(
@@ -359,7 +330,7 @@ impl Source for Program {
             Method::GET,
         ))
     }
-    fn update_source(&self, source: &str) -> Box<dyn SendWith> {
+    fn update_source(&self, source: &str) -> Box<dyn SendWith<DefaultResponse>> {
         Box::new(LockStrategy::new(
             source.to_string(),
             // source.to_string(),
@@ -380,9 +351,9 @@ impl Source for Program {
     }
 }
 
-impl Create for Program {
-    fn create(&self) -> DefaultStrategy {
-        DefaultStrategy::new(
+impl Create<DefaultResponse, String> for Program {
+    fn create(&self) -> Box<dyn SendWith<DefaultResponse>> {
+        Box::new(DefaultStrategy::new(
             format!(
                 r#"<?xml version="1.0" encoding="UTF-8"?>
                                     <program:abapProgram xmlns:program="http://www.sap.com/adt/programs/programs" xmlns:adtcore="http://www.sap.com/adt/core" 
@@ -399,7 +370,7 @@ impl Create for Program {
                 None => String::from("/sap/bc/adt/programs/programs"),
             },
             Method::POST,
-        )
+        ))
         //ITKK901409
         // self.path = match self.transport_request {
         //     Some(t) => format!("/sap/bc/adt/programs/programs?corrNr={0}", t),
@@ -422,8 +393,8 @@ impl Create for Program {
     }
 }
 
-impl CopyTo for Program {
-    fn copy_to(&mut self, target_name: &str) -> Box<dyn SendWith> {
+impl CopyTo<DefaultResponse, String> for Program {
+    fn copy_to(&mut self, target_name: &str) -> Box<dyn SendWith<DefaultResponse>> {
         Box::new(DefaultStrategy::new(
             format!(
                 r#"<?xml version="1.0" encoding="UTF-8"?><program:abapProgram xmlns:program="http://www.sap.com/adt/programs/programs" 
@@ -476,12 +447,12 @@ impl Lock for Program {
     fn lock() {}
 }
 
-impl Delete for Program {
-    fn delete(&mut self) -> Box<dyn SendWith> {
+impl Delete<DefaultResponse, String> for Program {
+    fn delete(&mut self) -> Box<dyn SendWith<DefaultResponse>> {
         Box::new(LockStrategy::new(
             String::new(),
             Method::DELETE,
-            LockObject::new(&"/sap/bc/adt/programs/programs/"),
+            LockObject::new(&format!("/sap/bc/adt/programs/programs/{}", self.prog_name)),
         ))
         // #[async_trait]
         // impl Sendable for Program {

@@ -106,7 +106,7 @@ impl SAPClient {
             .send()
             .await
             .unwrap();
-
+        // println!("{:?}", res);
         self.set_headers_from_headermap(res.headers());
     }
     fn set_headers_from_headermap(&mut self, headers: &HeaderMap) {
@@ -296,7 +296,7 @@ impl SAPClient {
         }
 
         let url = format!("{0}{1}", &self.host, lock_handle.get_lock_path());
-
+        println!("{}", url);
         self.client
             .post(self.append_mandt_to_url(&url))
             .basic_auth(&self.dest.uname, Some(&self.dest.passwd))
