@@ -3,7 +3,7 @@ use std::{any::Any, marker::PhantomData};
 use async_trait::async_trait;
 use clap::ArgMatches;
 use sap_bindings::{
-    app_config::AppConfig,
+    config::AppConfig,
     net::{
         behavior::{CopyTo, CopyToSys, Create, Delete},
         object::{Class, Program},

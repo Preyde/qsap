@@ -12,7 +12,7 @@ use sap_bindings::net::SAPClient;
 pub mod command_parser;
 pub mod output_handler;
 
-use sap_bindings::app_config::AppConfig;
+use sap_bindings::config::AppConfig;
 
 #[tokio::main]
 async fn main() {

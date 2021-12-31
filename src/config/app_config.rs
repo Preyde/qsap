@@ -1,4 +1,4 @@
-use crate::app_config::PasswordManager;
+use crate::config::PasswordManager;
 use crate::net::{Destination, Session};
 use chrono::{DateTime, Utc};
 use crossterm::event::read;
