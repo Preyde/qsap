@@ -1,10 +1,9 @@
 // use crate::config::Sendable;
-use crate::config::{
-    self, AdtError, AdtResponse, Config, Lock, LockHandle, Request, Responses, SendableConfig,
-};
 use reqwest::{header::HeaderMap, Client, Method, Response};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Display};
+
+use super::request::{LockHandle, Request};
 #[derive(Debug)]
 pub struct Session {
     pub csrf_token: String,

@@ -1,10 +1,13 @@
 use async_trait::async_trait;
 use reqwest::{Body, Method, StatusCode};
 
-use super::TryFromAsync;
-use super::{strategy::DefaultStrategy, Response, SendWith, Source};
-use crate::config::AdtError;
-use crate::data::abap_table::SoapResponse;
+// use super::{strategy::DefaultStrategy, Response, SendWith, Source};
+// use super::{Responses, TryFromAsync};
+// use crate::config::AdtError;
+use crate::{
+    data::abap_table::SoapResponse,
+    net::request::{Response, Responses},
+};
 
 pub struct Table {
     tab_name: String,
@@ -17,26 +20,29 @@ pub struct TableResponse {
     status: StatusCode,
 }
 
-// impl Response<SoapResponse> for TableResponse {
-//     fn get_status(&self) -> StatusCode {
-//         self.status.clone()
-//     }
-//     fn get_text(&self) -> String {
-//         self.body.clone()
-//     }
-//     fn get_value(&self) -> SoapResponse {
-//         quick_xml::de::from_str(&self.body).unwrap()
-//     }
-// }
+impl Response for TableResponse {
+    // type Result = SoapResponse;
+    fn get_status(&self) -> StatusCode {
+        self.status.clone()
+    }
+    fn get_text(&self) -> String {
+        self.body.clone()
+    }
+    fn get_value(&self) -> Responses {
+        let x: SoapResponse = quick_xml::de::from_str(&self.body).unwrap();
+        Responses::Table(x)
+    }
+}
 // #[async_trait]
 // impl TryFromAsync<reqwest::Response> for TableResponse {
 //     type Error = AdtError;
 
 //     async fn try_from_async(res: reqwest::Response) -> Result<Self, AdtError> {
+//         let status = &res.status();
 //         if let Ok(text) = res.text().await {
 //             Ok(TableResponse {
 //                 body: text,
-//                 status: res.status(),
+//                 status: status.clone(),
 //             })
 //         } else {
 //             Err(AdtError {

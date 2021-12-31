@@ -2,6 +2,7 @@ use ini::configparser::ini::Ini;
 use rustc_serialize::base64::FromBase64;
 
 /// Interface to shadow File which holds the encrypted password and the auto generated nonce
+#[derive(Debug, Clone)]
 pub struct PasswordManager {
     config: Ini,
     path: String,

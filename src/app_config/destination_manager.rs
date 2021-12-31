@@ -2,7 +2,7 @@ use serde_json::from_str;
 use std::fs::{read_to_string, write};
 
 use crate::net::Destination;
-
+#[derive(Debug, Clone)]
 pub struct DestinationManager {
     dests: Vec<Destination>,
     dests_plain_text_passwd: Vec<Destination>,

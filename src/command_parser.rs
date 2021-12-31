@@ -2,189 +2,53 @@ use std::{any::Any, marker::PhantomData};
 
 use async_trait::async_trait;
 use clap::ArgMatches;
-use sap_adt_bindings::{
+use sap_bindings::{
     app_config::AppConfig,
-    config::{
-        class_config::{ClassConfig, ClassError, ClassResponse},
-        freestyle_config::{FreeStyleConfig, FreeStyleError, FreeStyleResponse},
-        program_config::{ConfigCopyDatabaseTable, Program},
-        AdtError, AdtResponse, Config, CopyTo, Create, Request, Response, Responses, SAPClient,
-        SendWith, Sendable, SendableConfig,
+    net::{
+        behavior::{CopyTo, CopyToSys, Create, Delete},
+        object::{Class, Program},
+        SendWith,
     },
-    data::abap_table::ABAPTable,
 };
+// use sap_adt_bindings::{
+//     app_config::AppConfig,
+//     config::{
+//         class::Class,
+//         class_config::{ClassConfig, ClassError, ClassResponse},
+//         freestyle_config::{FreeStyleConfig, FreeStyleError, FreeStyleResponse},
+//         program::Program,
+//         AdtError, AdtResponse, Config, CopyTo, CopyToSys, Create, DefaultResponse, Delete, Request,
+//         Response, Responses, SAPClient, SendWith, Sendable, SendableConfig,
+//     },
+//     data::abap_table::ABAPTable,
+//     net::Destination,
+// };
 
 pub mod command_match_parser {}
 
-pub struct CommandMatchParser<'a, T, U> {
+pub struct CommandMatchParser<'a> {
     config: &'a AppConfig,
-    res: Option<T>,
-    result: Option<U>, // program: Program,
+    prog: Option<Program>, // res: Option<T>,
+                           // result: Option<U>, // program: Program
 }
 
-// struct TableCommand {
-//     config: FreeStyleConfig,
-// }
-// impl TableCommand {
-//     fn new(matches: ArgMatches) -> Self {
-//         TableCommand {
-//             config: FreeStyleConfig::new(
-//                 format!("SELECT * FROM {}", matches.value_of("name").unwrap()),
-//                 matches.value_of_t("rows").ok(),
-//             ),
-//         }
-//     }
-//     fn get_config(&self) -> FreeStyleConfig {
-//         self.config
-//     }
-// }
-// pub trait CommandParser<T> {
-//     fn parse(args: &ArgMatches) -> dyn SendableConfig<T> {}
-// }
 pub struct TableCommandParser {}
 pub struct SqlCommandParser {}
 pub struct ProgramCommandParser {}
 pub struct ClassCommandParser {}
-// type SendableConfig = dyn Config + SendWith;
-// trait SendableConfig: Config + SendWith {}
 
-// fn parse_delete_program_command(matches: &ArgMatches) -> Box<dyn SendableConfig> {
-// Box::new(ConfigDeleteProgram::new(
-//     matches.value_of("name").unwrap(),
-//     matches.value_of("transport").unwrap(),
-// ))
-// }
-
-// fn parse_create_program_command<'a>(matches: &'a ArgMatches) -> Box<dyn SendWith<'a>> {
-//     Program::new(
-//         matches.value_of("name").unwrap(),
-//         matches.value_of("package"),
-//         matches.value_of("transport"),
-//         // match matches.value_of("package") {
-//         //     Some(v) => Some(v.to_string()),
-//         //     None => None,
-//         // },
-//         // match matches.value_of("transport") {
-//         //     Some(v) => Some(v.to_string()),
-//         //     None => None,
-//         // },
-//     )
-//     .create()
-//     // Box::new(ConfigCreateProgram::new(
-//     //     matches.value_of("name").unwrap(),
-//     //     matches.value_of("package"),
-//     //     matches.value_of("transport"),
-//     // ))
-// }
-
-// fn parse_copy_prog_command<'a>(matches: &'a ArgMatches) -> Box<dyn SendWith<'a>> {
-//     Program::new(
-//         matches.value_of("source").unwrap(),
-//         matches.value_of("package"),
-//         matches.value_of("transport"),
-//         // match matches.value_of("package") {
-//         //     Some(v) => Some(v.to_string()),
-//         //     None => None,
-//         // },
-//         // match matches.value_of("transport") {
-//         //     Some(v) => Some(v.to_string()),
-//         //     None => None,
-//         // },
-//     )
-//     .copy_to(matches.value_of("name").unwrap())
-//     // Box::new(ConfigCopyProgram::new(
-//     //     matches.value_of("name").unwrap(),
-//     //     matches.value_of("package").unwrap(),
-//     //     matches.value_of("source").unwrap(),
-//     //     matches.value_of("transport").unwrap(),
-//     // ))
-// }
-// fn parse_new_table_command(matches: &ArgMatches) -> Box<dyn SendableConfig> {
-// Box::new(ConfigCreateTable::new(
-//     matches.value_of("name").unwrap(),
-//     matches.value_of("description").unwrap(),
-// ))
-// }
-// fn parse_table_command(matches: &ArgMatches) -> Box<dyn SendableConfig> {
-//     let tab_name = matches.value_of("name").unwrap();
-//     let rows: Option<u32> = matches.value_of_t("rows").ok();
-//     // let path = args.value_of("out");
-//     Box::new(FreeStyleConfig::new(
-//         format!("SELECT * FROM {0}", tab_name),
-//         rows,
-//     ))
-// }
-// fn parse_sql_command(matches: &ArgMatches) -> Box<dyn SendableConfig> {
-//     Box::new(FreeStyleConfig::new(
-//         matches.value_of_t("sql_exp").unwrap(),
-//         matches.value_of_t("rows").ok(),
-//     ))
-// }
-// fn parse_class_command(matches: &ArgMatches) -> Box<dyn SendableConfig> {
-//     Box::new(ClassConfig::new(
-//         matches.value_of("name").unwrap(),
-//         matches.value_of("package").unwrap(),
-//         matches.value_of("transport").unwrap(),
-//     ))
-// }
-
-// impl CommandParser<FreeStyleConfig> for TableCommandParser {
-//     fn parse(args: &ArgMatches) -> FreeStyleConfig {
-//         let tab_name = args.value_of("name").unwrap();
-//         let rows: Option<u32> = args.value_of_t("rows").ok();
-//         // let path = args.value_of("out");
-//         FreeStyleConfig::new(format!("SELECT * FROM {0}", tab_name), rows)
-//     }
-// }
-// impl CommandParser<FreeStyleConfig> for SqlCommandParser {
-//     fn parse(args: &ArgMatches) -> dyn SendableConfig<T> {
-//         FreeStyleConfig::new(
-//             args.value_of_t("sql_exp").unwrap(),
-//             args.value_of_t("rows").ok(),
-//         )
-//     }
-// }
-// impl CommandParser<ConfigCreateProgram, ProgramResponse, ProgramError> for ProgramCommandParser {
-//     fn parse(args: &ArgMatches) -> ConfigCreateProgram {
-//         ConfigCreateProgram::new(
-//             args.value_of("name").unwrap(),
-//             args.value_of("package").unwrap(),
-//             args.value_of("transport").unwrap(),
-//         )
-//     }
-// }
-// impl CommandParser<ClassConfig, ClassResponse, ClassError> for ClassCommandParser {
-//     fn parse(args: &ArgMatches) -> ClassConfig {
-// ClassConfig::new(
-//     args.value_of("name").unwrap(),
-//     args.value_of("package").unwrap(),
-//     args.value_of("transport").unwrap(),
-// )
-//     }
-// }
-
-impl<'a, T, U> CommandMatchParser<'a, T, U> {
+impl<'a> CommandMatchParser<'a> {
     pub fn new(config: &'a AppConfig) -> Self {
         CommandMatchParser {
             config,
-            res: None,
-            result: None,
+            prog: None
+            // res: None,
+            // result: None,
         }
     }
-    // fn parse_copy_database_command(&self, matches: &ArgMatches) -> Box<dyn SendableConfig> {
-    //     Box::new(ConfigCopyDatabaseTable::new(
-    //         matches.value_of("source").unwrap(),
-    //         &self
-    //             .config
-    //             .get_destination_from_sys(matches.value_of("destination").unwrap())
-    //             .unwrap(),
-    //         matches.value_of("package").unwrap(),
-    //         matches.value_of("transport").unwrap(),
-    //     ))
-    // }
-    pub fn parse(&self, args: &ArgMatches) -> Box<dyn SendWith<dyn Response<T>>>
-    where
-        T: Response<U>,
+
+    pub fn parse<'b>(&'b mut self, args: &ArgMatches) -> Box<dyn SendWith + 'b>
+// where T: Response
     {
         // type x = <C as Sendable<FreeStyleResponse, FreeStyleError>>
 
@@ -193,7 +57,7 @@ impl<'a, T, U> CommandMatchParser<'a, T, U> {
             // &Some(("sql", matches)) => parse_sql_command(matches),
             &Some(("new", new_matches)) => match new_matches.subcommand() {
                 Some(("prog", matches)) => Program::new(
-                    matches.value_of("prog_name").unwrap(),
+                    matches.value_of("name").unwrap(),
                     matches.value_of("package"),
                     matches.value_of("transport"),
                 )
@@ -201,13 +65,58 @@ impl<'a, T, U> CommandMatchParser<'a, T, U> {
 
                 // Some(("class", matches)) => parse_class_command(matches),
                 // Some(("tab", matches)) => parse_new_table_command(matches),
+                Some(("class", matches)) => Class::new(
+                    matches.value_of("name").unwrap(),
+                    matches.value_of("transport"),
+                    matches.value_of("package"),
+                )
+                .create(),
                 Some((_, _)) => panic!(""),
                 None => panic!(""),
             },
-            &Some(("copy", matches)) => match matches.subcommand() {
-                // Some(("prog", matches)) => parse_copy_prog_command(matches),
-                // Some(("tab", matches)) => self.parse_copy_database_command(matches),
-                Some((&_, _)) => panic!(""),
+            &Some(("copy", matches)) => {
+                match matches.subcommand() {
+                    Some(("prog", matches)) => {
+                        self.prog = Some(Program::new(
+                            matches.value_of("source").unwrap(),
+                            matches.value_of("package"),
+                            matches.value_of("transport"),
+                        ));
+
+                        return if matches.is_present("destination") {
+                            self.prog.as_ref().unwrap().copy_to_sys(
+                                &self
+                                    .config
+                                    .get_destination_from_sys(
+                                        &matches.value_of("destination").unwrap(),
+                                    )
+                                    .unwrap(),
+                            )
+                        } else {
+                            self.prog
+                                .as_ref()
+                                .unwrap()
+                                .copy_to(matches.value_of("source").unwrap())
+                        };
+
+                        // *a
+                    }
+                    // Some(("tab", matches)) => self.parse_copy_database_command(matches),
+                    Some((&_, _)) => panic!(""),
+                    None => panic!(""),
+                }
+            }
+            &Some(("delete", delete_matches)) => match delete_matches.subcommand() {
+                Some(("prog", matches)) => Program::new(
+                    matches.value_of("name").unwrap(),
+                    matches.value_of("package"),
+                    matches.value_of("transport"),
+                )
+                .delete(),
+
+                // Some(("class", matches)) => parse_class_command(matches),
+                // Some(("tab", matches)) => parse_new_table_command(matches),
+                Some((_, _)) => panic!(""),
                 None => panic!(""),
             },
             // &Some(("delete", matches)) => parse_delete_program_command(matches),
@@ -216,118 +125,3 @@ impl<'a, T, U> CommandMatchParser<'a, T, U> {
         }
     }
 }
-// trait NewTrait: Config + SendWith {}
-
-// enum CommandMatchOutput {
-//     FreeStyle(FreeStyleConfig),
-//     ProgramCreate(ConfigCreateProgram),
-//     ClassCreate(ClassConfig),
-// }
-
-// enum Commands {
-//     TableCommand(FreeStyleConfig),
-//     ProgramCommand(ConfigCreateProgram),
-//     ClassCommand(ClassConfig),
-// }
-
-// impl CommandParser for CommandMatchParser {
-//     fn parse(args: &ArgMatches) -> C {}
-// }
-// struct Xxx {
-//     path: String,
-//     body: String,
-// }
-// impl Config for Xxx {
-//     fn get_body(&self) -> String {
-//         self.body.clone()
-//     }
-//     fn get_path(&self) -> String {
-//         self.path.clone()
-//     }
-// }
-// #[async_trait]
-// impl Sendable<dyn AdtResponse, dyn AdtError> for Xxx {
-//     async fn send_with(&mut self, client: &mut SAPClient) -> Result<dyn AdtResponse, dyn AdtError> {
-//         client.send(self).await;
-//         Ok(ProgramResponse {})
-//     }
-// }
-// impl AdtResponse for Xxx {
-//     fn get_data(self) -> Responses {
-//         Responses::Program(())
-//     }
-// }
-// trait NewTrait<'a, T: ?Sized>:
-//     Config + Sendable<(Box<dyn AdtResponse> + 'a), (Box<dyn AdtError> + 'a)>
-// {
-// }
-// impl AdtError for Xxx {}
-// impl CommandMatchParser {
-// fn parse_copy_database_command(&self, matches: &ArgMatches) -> Box<dyn SendableConfig> {
-//     Box::new(ConfigCopyDatabaseTable::new(
-//         matches.value_of("source").unwrap(),
-//         &self
-//             .config
-//             .get_destination_from_sys(matches.value_of("destination").unwrap())
-//             .unwrap(),
-//         matches.value_of("package").unwrap(),
-//         matches.value_of("transport").unwrap(),
-//     ))
-// }
-// pub fn parse(&self, args: &ArgMatches) -> Box<dyn SendableConfig> {
-//     // type x = <C as Sendable<FreeStyleResponse, FreeStyleError>>
-
-//     match &args.subcommand() {
-//         &Some(("table", matches)) => parse_table_command(matches),
-//         &Some(("sql", matches)) => parse_sql_command(matches),
-//         &Some(("new", new_matches)) => match new_matches.subcommand() {
-//             Some(("prog", matches)) => parse_create_program_command(matches),
-//             Some(("class", matches)) => parse_class_command(matches),
-//             Some(("tab", matches)) => parse_new_table_command(matches),
-//             Some((_, _)) => panic!(""),
-//             None => panic!(""),
-//         },
-//         &Some(("copy", matches)) => match matches.subcommand() {
-//             Some(("prog", matches)) => parse_copy_prog_command(matches),
-//             Some(("tab", matches)) => self.parse_copy_database_command(matches),
-//             Some((&_, _)) => panic!(""),
-//             None => panic!(""),
-//         },
-//         &Some(("delete", matches)) => parse_delete_program_command(matches),
-//         &Some((_, _)) => panic!(""),
-//         None => panic!(""),
-//     }
-// }
-// }
-
-// impl CommandParser for CommandMatchParser {
-//     fn parse(args: &ArgMatches) -> T {
-//         match &args.subcommand() {
-//             &Some(("table", matches)) => TableCommandParser::parse(matches),
-//             &Some(("sql", matches)) => SqlCommandParser::parse(matches),
-//             &Some(("new", new_matches)) => match new_matches.subcommand() {
-//                 Some(("prog", matches)) => ProgramCommandParser::parse(matches),
-//                 Some(("class", matches)) => ClassCommandParser::parse(matches),
-
-//                 Some((_, _)) => panic!(""),
-//                 None => panic!(""),
-//             },
-//             // &Some(("copy", copy_matches)) => {
-//             //     let source_name: String = copy_matches.value_of_t("source").unwrap();
-//             //     let prog_name: String = copy_matches.value_of_t("name").unwrap();
-//             //     let package_name: String = copy_matches.value_of_t("package").unwrap();
-//             //     let transport_request: String = copy_matches.value_of_t("transport").unwrap();
-
-//             //     copy_program(&source_name, &prog_name, &transport_request, &package_name).await;
-//             // }
-//             // &Some(("transport", transport_matches)) => {}
-//             // &Some(("delete", delete_matches)) => {
-//             //     let prog_name: String = delete_matches.value_of_t("name").unwrap();
-
-//             //     delete_program(&prog_name).await;
-//             // }
-//             &Some((_, _)) => panic!(""),
-//             None => panic!(""),
-//         }
-//     }
-// }

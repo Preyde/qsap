@@ -1,0 +1,53 @@
+REPORT zeclipse.
+DATA:
+  lt_fields    TYPE TABLE OF dd03p,
+  wa_field     TYPE dd03p,
+  table_header TYPE dd02v,
+  techn_set    TYPE dd09v.
+
+table_header-tabname = 'ZMARA1'.
+table_header-ddtext = 'ZMARA1 TABLE'.
+table_header-ddlanguage = sy-langu.
+table_header-tabclass = 'TRANSP'.
+table_header-as4user = sy-uname.
+table_header-contflag = 'A'.
+table_header-mainflag = 'X'.
+
+techn_set-tabname = 'ZMARA1'.
+techn_set-tabkat = 0.
+techn_set-tabart = 'APPL1'.
+techn_set-bufallow = 'X'.
+techn_set-pufferung = 'X'.
+
+wa_field-tabname = 'ZMARA1'.
+wa_field-ddlanguage = sy-langu.
+wa_field-notnull = 'X'.
+wa_field-keyflag = 'X'.
+wa_field-fieldname = 'ID'.
+wa_field-position = '1'.
+wa_field-rollname = 'CHAR10'.
+
+APPEND wa_field TO lt_fields.
+
+CALL FUNCTION 'DDIF_TABL_PUT'
+  EXPORTING
+    name              = 'ZMARA1'
+    dd02v_wa          = table_header
+    dd09l_wa          = techn_set
+  TABLES
+    dd03p_tab         = lt_fields
+  EXCEPTIONS
+    tabl_not_found    = 1
+    name_inconsistent = 2
+    tabl_inconsistent = 3
+    put_failure       = 4
+    put_refused       = 5
+    OTHERS            = 6.
+
+CALL FUNCTION 'DDIF_TABL_ACTIVATE'
+  EXPORTING
+    name        = 'ZMARA1'
+  EXCEPTIONS
+    not_found   = 1
+    put_failure = 2
+    OTHERS      = 3.

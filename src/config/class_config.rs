@@ -38,23 +38,23 @@ impl ClassConfig {
     }
 }
 
-impl Config for ClassConfig {
-    fn get_body(&self) -> String {
-        self.body.clone()
-    }
-    fn get_path(&self) -> String {
-        self.path.clone()
-    }
-}
-#[async_trait]
-impl Sendable for ClassConfig {
-    async fn send_with(&mut self, client: &mut SAPClient) -> Result<(), AdtError> {
-        // let res = client.send(self).await;
-        Ok(())
-        // Ok(res.text().await.unwrap())
-    }
-    fn get_response(&self) -> Option<Responses> {
-        Some(Responses::Class(String::from("")))
-    }
-}
-impl SendableConfig for ClassConfig {}
+// impl Config for ClassConfig {
+//     fn get_body(&self) -> String {
+//         self.body.clone()
+//     }
+//     fn get_path(&self) -> String {
+//         self.path.clone()
+//     }
+// }
+// #[async_trait]
+// impl Sendable for ClassConfig {
+//     async fn send_with(&mut self, client: &mut SAPClient) -> Result<(), AdtError> {
+//         // let res = client.send(self).await;
+//         Ok(())
+//         // Ok(res.text().await.unwrap())
+//     }
+//     fn get_response(&self) -> Option<Responses> {
+//         Some(Responses::Class(String::from("")))
+//     }
+// }
+// impl SendableConfig for ClassConfig {}

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2018"
 
 [lib]
-name = "sap_adt_bindings"
+name = "sap_bindings"
 path = "src/lib.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

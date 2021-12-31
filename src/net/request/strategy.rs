@@ -1,26 +1,36 @@
-use std::{future::Future, ops::Deref};
+use std::{any::Any, future::Future, ops::Deref};
 
 use super::{
-    program_config::{LockHandleResponse, Program},
-    AdtError, AsReq, Create, DefaultResponse, LockHandle, LockObject, Request, Response, SAPClient,
-    Source, TryFromAsync,
+    behavior::{Create, Source},
+    // program::{LockHandleResponse, Program},
+    AdtError,
+    AsReq,
+    DefaultResponse,
+    LockHandle,
+    LockHandleResponse,
+    LockObject,
+    Request,
+    Response,
+    SAPClient,
+    SendWith,
+    TryFromAsync,
 };
-use crate::{config::SendWith, net::Destination};
+use crate::net::Destination;
 use async_trait::async_trait;
 use reqwest::Method;
-pub struct DefaultStrategy<T, U>
+pub struct DefaultStrategy<T>
 where
-    T: Response<U> + TryFromAsync<reqwest::Response>,
+    T: Response + TryFromAsync<reqwest::Response>,
 {
     body: String,
     path: String,
     method: Method,
     res: Option<T>,
-    x: Option<U>, // res: T,
+    // x: Option<U>, // res: T,
 }
-impl<T, U> DefaultStrategy<T, U>
+impl<T> DefaultStrategy<T>
 where
-    T: Response<U> + TryFromAsync<reqwest::Response>,
+    T: Response + TryFromAsync<reqwest::Response>,
 {
     pub fn new(body: String, path: String, method: Method) -> Self {
         DefaultStrategy {
@@ -28,15 +38,15 @@ where
             path,
             method,
             res: None, // res: None,
-            x: None,
+                       // x: None,
         }
     }
 }
 
-impl<T, U> Request for DefaultStrategy<T, U>
+impl<T> Request for DefaultStrategy<T>
 where
-    T: Response<U> + TryFromAsync<reqwest::Response> + Sync + Send,
-    U: Sync + Send,
+    T: Response + TryFromAsync<reqwest::Response> + Sync + Send,
+    // U: Sync + Send,
 {
     fn get_body(&self) -> String {
         self.body.clone()
@@ -49,13 +59,14 @@ where
     }
 }
 #[async_trait]
-impl<T, U> SendWith<T> for DefaultStrategy<T, U>
+impl<T> SendWith for DefaultStrategy<T>
 where
-    T: Response<U> + TryFromAsync<reqwest::Response> + Sync + Send,
-    Self: AsReq + Sync + Send, // where
-                               //                                                                     // T: LockHandle + Source + AsMut<T> + AsRef<T> + Sync + Send
+    T: Response + TryFromAsync<reqwest::Response> + Sync + Send,
+    //     Self: AsReq + Sync + Send, // where
+    //                                                                     // T: LockHandle + Source + AsMut<T> + AsRef<T> + Sync + Send
 {
-    async fn send_with(&mut self, client: &mut SAPClient) -> Result<T, AdtError> {
+    // type Response = T;
+    async fn send_with(&mut self, client: &mut SAPClient) -> Result<Box<dyn Response>, AdtError> {
         let config = self.as_req();
         let res = client.request(config).await;
         if let Ok(result) = T::try_from_async(res).await {
@@ -75,34 +86,34 @@ where
 }
 
 trait IntoSendWith<T> {
-    fn into_send_with(self) -> Box<dyn SendWith<T>>;
+    fn into_send_with(self) -> Box<dyn SendWith>;
 }
-impl<T, U> IntoSendWith<T> for DefaultStrategy<T, U>
+impl<T> IntoSendWith<T> for DefaultStrategy<T>
 where
-    T: Response<U> + TryFromAsync<reqwest::Response> + 'static,
-    U: Sync + Send + 'static,
+    T: Response + TryFromAsync<reqwest::Response> + 'static,
+    // U: Sync + Send + 'static,
 {
-    fn into_send_with(self) -> Box<dyn SendWith<T>> {
-        Box::new(self) as Box<dyn SendWith<T>>
+    fn into_send_with(self) -> Box<dyn SendWith> {
+        Box::new(self) as Box<dyn SendWith>
     }
 }
 
-pub struct LockStrategy<T, U> {
+pub struct LockStrategy<T> {
     body: String,
     method: Method,
     lock_obj: LockObject,
-    res: Option<Box<dyn Response<T>>>,
-    x: Option<U>,
+    // res: Option<Box<dyn Response>>,
+    x: Option<T>,
 }
-impl<T, U> AsRef<LockStrategy<T, U>> for LockStrategy<T, U>
+impl<T> AsRef<LockStrategy<T>> for LockStrategy<T>
 // where
 //     T: LockHandle,
 {
-    fn as_ref(&self) -> &LockStrategy<T, U> {
+    fn as_ref(&self) -> &LockStrategy<T> {
         self.as_ref()
     }
 }
-impl<T, U> LockStrategy<T, U>
+impl<T> LockStrategy<T>
 // where
 //     T: LockHandle,
 {
@@ -111,7 +122,7 @@ impl<T, U> LockStrategy<T, U>
             body,
             method,
             lock_obj,
-            res: None,
+            // res: None,
             x: None,
         }
     }
@@ -125,10 +136,10 @@ impl<T, U> LockStrategy<T, U>
 //     }
 // }
 #[async_trait]
-impl<T, U> Request for LockStrategy<T, U>
+impl<T> Request for LockStrategy<T>
 where
-    T: Response<U> + TryFromAsync<reqwest::Response> + Sync + Send,
-    U: Sync + Send,
+    T: Response + TryFromAsync<reqwest::Response> + Sync + Send,
+    // U: Sync + Send,
     // where
     //     T: LockHandle + std::marker::Sync + Send,
 {
@@ -143,12 +154,13 @@ where
     }
 }
 #[async_trait]
-impl<T, U> SendWith<T> for LockStrategy<T, U>
+impl<T> SendWith for LockStrategy<T>
 where
-    T: Response<U> + TryFromAsync<reqwest::Response> + Sync + Send, // where
+    T: Response + TryFromAsync<reqwest::Response> + Sync + Send, // where
     Self: AsReq + Sync + Send, //     T: LockHandle + Source<'a> + AsMut<T> + AsRef<T> + Sync + Send
 {
-    async fn send_with(&mut self, client: &mut SAPClient) -> Result<T, AdtError> {
+    // type Response = T;
+    async fn send_with(&mut self, client: &mut SAPClient) -> Result<Box<dyn Response>, AdtError> {
         client.set_stateful(true);
 
         let lock_handle_res = client.lock(&self.lock_obj).await;
@@ -172,30 +184,30 @@ where
         // Ok(())
     }
 }
-pub struct CopyToSysStrategy<'a, T, U, V>
+pub struct CopyToSysStrategy<'a, T, U>
 where
-    T: Send + Sync,
+    T: Source + Create + AsRef<T> + Send + Sync,
     // U: SendWith<'a> + Send + Sync,
 {
     // lock_object: LockObject,
     obj: &'a T,
-    res: Option<Box<dyn Response<U>>>,
-    data: Option<V>,
+    // res: Option<Box<dyn AdtResponse>>,
+    data: Option<U>,
     destination: Destination, // update_source_req: Option<Box<(dyn SendWith<'a> + 'a)>>, // update_source_req: Option<Box<dyn SendWith<'a>>>, // xxx: Box<dyn SendWith<'a>>,
 }
-impl<'a, T, U, V> CopyToSysStrategy<'a, T, U, V>
+impl<'a, T, U> CopyToSysStrategy<'a, T, U>
 where
-    T: Source<U, V> + AsMut<T> + AsRef<T> + Sync + Send,
-    U: Response<V> + TryFromAsync<reqwest::Response>, // U: SendWith<'a> + Send + Sync + 'a,
+    T: Create + Source + AsMut<T> + AsRef<T> + Sync + Send,
+    U: Response + TryFromAsync<reqwest::Response>, // U: SendWith<'a> + Send + Sync + 'a,
 {
     pub fn new(
         // lock_object: LockObject,
         obj: &'a T,
         destination: Destination,
-    ) -> CopyToSysStrategy<'a, T, U, V> {
+    ) -> CopyToSysStrategy<'a, T, U> {
         CopyToSysStrategy {
             obj,
-            res: None,
+            // res: None,
             data: None,
             // lock_object,
             destination, // update_source_req: None, // update_source_req: None,
@@ -204,14 +216,15 @@ where
 }
 
 #[async_trait]
-impl<'a, T, U, V> SendWith<U> for CopyToSysStrategy<'a, T, U, V>
+impl<'a, T, U> SendWith for CopyToSysStrategy<'a, T, U>
 where
-    T: Source<U, V> + Create<U, V> + AsRef<T> + Sync + Send,
-    U: Response<V> + TryFromAsync<reqwest::Response> + Sync + Send,
-    V: Sync + Send,
+    T: Source + Create + AsRef<T> + Sync + Send,
+    U: Response + TryFromAsync<reqwest::Response>,
+    // V: Sync + Send,
     // U: SendWith<'a> + 'a,
 {
-    async fn send_with(&mut self, client: &mut SAPClient) -> Result<U, AdtError>
+    // type Response = U;
+    async fn send_with(&mut self, client: &mut SAPClient) -> Result<Box<dyn Response>, AdtError>
 // where
     //     T: LockHandle + Source + AsMut<T> + AsRef<T> + Sync + Send,
     {
@@ -224,13 +237,15 @@ where
         client.set_destination(&self.destination);
         client.clear_session();
         client.set_stateful(true);
+        let mut x = self.obj.create();
 
         let res = self.obj.create().send_with(client).await?;
 
         // let res = client.request(self.obj.create().as_req()).await;
         // println!("{}", res.status());
         // println!("{}", res.text().await.unwrap());
-        self.obj.update_source(&text).send_with(client).await
+        let x = self.obj.update_source(&text).send_with(client).await;
+        x
         // U::try_from_async(res.).await
         // Ok(())
     }

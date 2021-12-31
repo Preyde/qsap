@@ -13,7 +13,7 @@ use super::destination_manager::DestinationManager;
 use crate::crypt::Crypt;
 
 pub mod app_config {}
-
+#[derive(Clone, Debug)]
 pub struct AppConfig {
     config: Ini,
     password_manager: PasswordManager,
@@ -143,7 +143,7 @@ impl AppConfig {
         self.destination_manager.write();
     }
 
-    pub fn get_default_destination(&mut self) -> Destination {
+    pub fn get_default_destination(&self) -> Destination {
         let mut dest = self
             .destination_manager
             .get_destination(&self.get_default_sys())
@@ -154,7 +154,7 @@ impl AppConfig {
         dest
     }
 
-    pub fn get_session_from_sys(&mut self, sys_id: &str) -> Option<Session> {
+    pub fn get_session_from_sys(&self, sys_id: &str) -> Option<Session> {
         let section = format!("session_{0}", sys_id);
         let expires_string = self.sessions_config.get(&section, "expires")?;
         let expires: DateTime<Utc> = DateTime::from_str(&expires_string).ok()?;
