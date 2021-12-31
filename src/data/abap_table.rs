@@ -147,6 +147,7 @@ pub struct XmlTest {
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename = "SOAP-ENV:Envelope")]
 // #[serde(rename = "SOAP-ENV:Envelope")]
+#[derive(PartialEq, Eq)]
 pub struct SoapResponse {
     // header: String,
     // #[serde(rename = "SOAP-ENV:Body")]
@@ -157,12 +158,13 @@ pub struct SoapResponse {
 }
 #[derive(Debug, Deserialize, Serialize)]
 // #[serde(rename = "SOAP-ENV:Body")]
+#[derive(PartialEq, Eq)]
 pub struct SoapBody {
     #[serde(rename = "BDL_DDIF_TABL_GET.Response")]
     pub response: BdlDdifTablGetResponse,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
 // #[serde(rename = "x:BDL_DDIF_TABL_GET.Response")]
 pub struct BdlDdifTablGetResponse {
     #[serde(rename = "DD02V_WA")]
@@ -185,7 +187,7 @@ pub struct BdlDdifTablGetResponse {
 //     buffered: String,
 
 // }
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "DD02V_WA")]
 pub struct Dd02v {
     #[serde(rename = "$unflatten=TABNAME")]
@@ -218,7 +220,7 @@ pub struct Dd02v {
 //     }
 // }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename = "DD09L_WA")]
 pub struct Dd09l {
     #[serde(rename = "$unflatten=TABNAME")]
@@ -244,7 +246,7 @@ pub struct Dd09l {
     #[serde(rename = "$unflatten=ROWORCOLST")]
     ROWORCOLST: String,
 }
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Dd03pStruc {
     #[serde(rename = "$unflatten=TABNAME")]
     TABNAME: String,
@@ -387,7 +389,7 @@ pub struct Dd03pStruc {
     #[serde(rename = "$unflatten=STRORLOCPOS")]
     STRORLOCPOS: String,
 }
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct DD03P_TAB {
     item: Vec<Dd03pStruc>,
 }

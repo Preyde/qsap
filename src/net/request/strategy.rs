@@ -69,6 +69,7 @@ where
     async fn send_with(&mut self, client: &mut SAPClient) -> Result<Box<dyn Response>, AdtError> {
         let config = self.as_req();
         let res = client.request(config).await;
+
         if let Ok(result) = T::try_from_async(res).await {
             Ok(result)
         } else {
@@ -166,7 +167,7 @@ where
         let lock_handle_res = client.lock(&self.lock_obj).await;
 
         let xml = lock_handle_res.text().await.unwrap();
-        println!("{:?}", &xml);
+        // println!("{:?}", &xml);
         let lock_handle: LockHandleResponse = quick_xml::de::from_str(&xml).unwrap();
 
         self.lock_obj

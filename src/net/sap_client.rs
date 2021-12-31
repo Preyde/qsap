@@ -213,7 +213,7 @@ impl SAPClient {
     pub async fn request<'a>(&mut self, config: Box<&'a dyn Request>) -> Response {
         if self.session.is_none() {
             self.fetch_csrf_token().await;
-            println!("{:?}", self.headers.as_ref().unwrap());
+            // println!("{:?}", self.headers.as_ref().unwrap());
             self.session = Some(Session {
                 csrf_token: self
                     .headers
@@ -235,9 +235,9 @@ impl SAPClient {
                     .clone(), //  session_cookie:
             });
         }
-        println!("{:?}", config.get_body());
+        // println!("{:?}", config.get_body());
         let url = format!("{0}{1}", &self.host, &config.get_path());
-        println!("{}", self.append_mandt_to_url(&url));
+        // println!("{}", self.append_mandt_to_url(&url));
         self.client
             .request(config.get_method(), self.append_mandt_to_url(&url))
             .basic_auth(&self.dest.uname, Some(&self.dest.passwd))
@@ -295,7 +295,7 @@ impl SAPClient {
         }
 
         let url = format!("{0}{1}", &self.host, lock_handle.get_lock_path());
-        println!("{}", url);
+        // println!("{}", url);
         self.client
             .post(self.append_mandt_to_url(&url))
             .basic_auth(&self.dest.uname, Some(&self.dest.passwd))

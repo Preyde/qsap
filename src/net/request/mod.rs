@@ -28,6 +28,7 @@ pub trait LockHandles {
     fn get_unlock_path(&self) -> Option<String>;
 }
 
+#[derive(PartialEq, Eq)]
 pub enum Responses {
     Default(String),
     Table(SoapResponse),
@@ -151,30 +152,14 @@ where
     fn unlock() {}
 }
 
-// #[async_trait]
-// pub trait SendWith<T>: Sync + Send
-// where
-//     T: Response + TryFromAsync<reqwest::Response> + Sync + Send,
-//     Self: AsReq + Sync + Send,
-// {
-//     async fn send_with(&mut self, client: &mut SAPClient) -> Result<T, AdtError>;
-// }
 #[async_trait]
-pub trait SendWith: Sync + Send
-// where
-//     T: Response + TryFromAsync<reqwest::Response> + Sync + Send,
-//     Self: AsReq + Sync + Send,
-{
-    // type Respon@se: Response;
+pub trait SendWith: Sync + Send {
     async fn send_with(&mut self, client: &mut SAPClient) -> Result<Box<dyn Response>, AdtError>;
 }
 
 use reqwest::Method;
 use serde::Deserialize;
-// pub trait Config {
-//     fn get_path(&self) -> &String;
-//     fn get_body(&self) -> &String;
-// }
+
 #[derive(Debug, Deserialize)]
 #[serde(rename = "DATA")]
 pub struct LockHandleData {
@@ -194,43 +179,7 @@ pub struct LockHandleResponse {
     // #[serde(rename = "asx:values")]
     pub values: LockHandleValues,
 }
-// #[async_trait]
-// pub trait SendWith: Sync + Send {
-//     async fn send_with(&mut self, client: &mut SAPClient) -> Result<Responses, AdtError>;
-// }
 
-// trait IntoSendWith<T> {
-//     fn into_send_with(&self) -> dyn SendWith<T>;
-// }
-// impl<T> IntoSendWith<T> for SendWith<T> {
-//     fn into_send_with(&self) -> dyn SendWith<T> {
-//         self
-//     }
-// }
-// pub trait Source {
-//     fn source(&self) -> Box<dyn SendWith>;
-//     fn update_source(&self, source: &str) -> Box<dyn SendWith>;
-//     fn get_source(&self) -> String;
-// }
-
-// #[async_trait]
-// pub trait Sendable {
-//     async fn send_with(&mut self, client: &mut SAPClient) -> Result<(), AdtError>;
-//     fn get_response(&self) -> Option<Responses>;
-// }
-// macro_rules! Config {
-//     ($t:ident) => {
-//         impl Config for $t {
-//             fn get_body(&self) -> String {
-//                 self.body
-//             }
-//             fn get_path(&self) -> String {
-//                 self.path
-//             }
-//         }
-//     };
-// }
-// #[derive(Config)]
 #[async_trait]
 pub trait Request: Sync + Send {
     // fn new() -> Box<dyn Request>;
@@ -284,6 +233,7 @@ where
     async fn try_from_async(res: reqwest::Response) -> Result<Box<dyn Response>, AdtError> {
         let status = res.status();
         if let Ok(text) = res.text().await {
+            println!("{}", text);
             Ok(Box::new(DefaultResponse { body: text, status }))
         } else {
             Err(AdtError {
@@ -292,27 +242,6 @@ where
         }
     }
 }
-
-// #[async_trait]
-// impl TryFromAsync<reqwest::Response> for DefaultResponse {
-//     type Error = AdtError;
-
-//     async fn try_from_async(res: reqwest::Response) -> Result<Self, AdtError> {
-//         let status = res.status();
-//         if let Ok(text) = res.text().await {
-//             Ok(DefaultResponse { body: text, status })
-//         } else {
-//             Err(AdtError {
-//                 details: String::from("xxx"),
-//             })
-//         }
-//     }
-// }
-// impl<T> From<reqwest::Response> for Response<T> {
-//     fn from(res: reqwest::Response) -> Self {
-
-//     }
-// }
 
 pub trait AsReq {
     fn as_req(&self) -> Box<&dyn Request>;

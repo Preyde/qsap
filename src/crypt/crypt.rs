@@ -45,7 +45,7 @@ impl Crypt {
         let len = master_passwd.len();
         let mut passwd = master_passwd.as_bytes().to_vec();
 
-        for i in 0..32 - len {
+        for _i in 0..32 - len {
             passwd.push(0u8);
         }
         let key = GenericArray::from_slice(&passwd);

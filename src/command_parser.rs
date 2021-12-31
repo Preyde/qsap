@@ -2,6 +2,8 @@ use std::{any::Any, marker::PhantomData};
 
 use async_trait::async_trait;
 use clap::ArgMatches;
+
+use i18n_codegen::i18n;
 use sap_bindings::{
     config::AppConfig,
     net::{
@@ -23,54 +25,75 @@ use sap_bindings::{
 //     data::abap_table::ABAPTable,
 //     net::Destination,
 // };
-
+i18n!("./i18n");
 pub mod command_match_parser {}
 
 pub struct CommandMatchParser<'a> {
     config: &'a AppConfig,
-    prog: Option<Program>, // res: Option<T>,
-                           // result: Option<U>, // program: Program
+    prog: Option<Program>,
+    success_msg: String,
+    locale: Locale, // res: Option<T>,
+                    // result: Option<U>, // program: Program
 }
 
-pub struct TableCommandParser {}
-pub struct SqlCommandParser {}
-pub struct ProgramCommandParser {}
-pub struct ClassCommandParser {}
+// pub struct TableCommandParser {}
+// pub struct SqlCommandParser {}
+// pub struct ProgramCommandParser {}
+// pub struct ClassCommandParser {}
 
 impl<'a> CommandMatchParser<'a> {
-    pub fn new(config: &'a AppConfig) -> Self {
+    pub fn get_success_smg(&self) -> String {
+        self.success_msg.clone()
+    }
+
+    pub fn new(config: &'a AppConfig, lang: &str) -> Self {
         CommandMatchParser {
             config,
-            prog: None
+            prog: None,
+            success_msg: String::from(""),
+            locale: match lang {
+                "DE" => Locale::De,
+                _ => Locale::En
+            }
             // res: None,
             // result: None,
         }
     }
 
-    pub fn parse<'b>(&'b mut self, args: &ArgMatches) -> Box<dyn SendWith + 'b>
+    pub fn parse<'b>(&'b mut self, args: &ArgMatches) -> (Box<dyn SendWith + 'b>, String)
 // where T: Response
     {
+        // i18n!("./i18n");
         // type x = <C as Sendable<FreeStyleResponse, FreeStyleError>>
-
+        // Locale::De::created();
         match &args.subcommand() {
             // &Some(("table", matches)) => parse_table_command(matches),
             // &Some(("sql", matches)) => parse_sql_command(matches),
             &Some(("new", new_matches)) => match new_matches.subcommand() {
-                Some(("prog", matches)) => Program::new(
-                    matches.value_of("name").unwrap(),
-                    matches.value_of("package"),
-                    matches.value_of("transport"),
-                )
-                .create(),
+                Some(("prog", matches)) => {
+                    // self.success_msg = self.locale.created(Name(matches.value_of("name").unwrap()));
+                    (
+                        Program::new(
+                            matches.value_of("name").unwrap(),
+                            matches.value_of("package"),
+                            matches.value_of("transport"),
+                        )
+                        .create(),
+                        self.locale.created(Name(matches.value_of("name").unwrap())),
+                    )
+                }
 
                 // Some(("class", matches)) => parse_class_command(matches),
                 // Some(("tab", matches)) => parse_new_table_command(matches),
-                Some(("class", matches)) => Class::new(
-                    matches.value_of("name").unwrap(),
-                    matches.value_of("transport"),
-                    matches.value_of("package"),
-                )
-                .create(),
+                Some(("class", matches)) => (
+                    Class::new(
+                        matches.value_of("name").unwrap(),
+                        matches.value_of("transport"),
+                        matches.value_of("package"),
+                    )
+                    .create(),
+                    self.locale.created(Name(matches.value_of("name").unwrap())),
+                ),
                 Some((_, _)) => panic!(""),
                 None => panic!(""),
             },
@@ -84,19 +107,25 @@ impl<'a> CommandMatchParser<'a> {
                         ));
 
                         return if matches.is_present("destination") {
-                            self.prog.as_ref().unwrap().copy_to_sys(
-                                &self
-                                    .config
-                                    .get_destination_from_sys(
-                                        &matches.value_of("destination").unwrap(),
-                                    )
-                                    .unwrap(),
+                            (
+                                self.prog.as_ref().unwrap().copy_to_sys(
+                                    &self
+                                        .config
+                                        .get_destination_from_sys(
+                                            &matches.value_of("destination").unwrap(),
+                                        )
+                                        .unwrap(),
+                                ),
+                                self.locale.copied(From(""), To("")),
                             )
                         } else {
-                            self.prog
-                                .as_ref()
-                                .unwrap()
-                                .copy_to(matches.value_of("source").unwrap())
+                            (
+                                self.prog
+                                    .as_ref()
+                                    .unwrap()
+                                    .copy_to(matches.value_of("source").unwrap()),
+                                self.locale.copied(From(""), To("")),
+                            )
                         };
 
                         // *a
@@ -107,12 +136,18 @@ impl<'a> CommandMatchParser<'a> {
                 }
             }
             &Some(("delete", delete_matches)) => match delete_matches.subcommand() {
-                Some(("prog", matches)) => Program::new(
-                    matches.value_of("name").unwrap(),
-                    matches.value_of("package"),
-                    matches.value_of("transport"),
-                )
-                .delete(),
+                Some(("prog", matches)) => {
+                    self.success_msg = self.locale.deleted(Name(matches.value_of("name").unwrap()));
+                    (
+                        Program::new(
+                            matches.value_of("name").unwrap(),
+                            matches.value_of("package"),
+                            matches.value_of("transport"),
+                        )
+                        .delete(),
+                        self.locale.deleted(Name(matches.value_of("name").unwrap())),
+                    )
+                }
 
                 // Some(("class", matches)) => parse_class_command(matches),
                 // Some(("tab", matches)) => parse_new_table_command(matches),

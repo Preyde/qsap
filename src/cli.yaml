@@ -124,7 +124,7 @@ subcommands:
                 takes_value: true
             - transport:
                 about: Transportauftrag
-                required: true
+         
                 takes_value: true
                 short: t
     - copy:
