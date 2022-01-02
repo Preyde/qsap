@@ -11,8 +11,11 @@ use sap_bindings::config::AppConfig;
 
 #[tokio::main]
 async fn main() {
+    let _conf = AppConfig::init();
+
     let cli_yaml = load_yaml!("cli.yaml");
     let mut app = App::from(cli_yaml);
+
     // Check if no argument was given because clap throws exit code 2
     if args_os().count() == 1 {
         app.print_help().expect("Could not print help");
@@ -21,7 +24,6 @@ async fn main() {
 
     let matches = app.get_matches();
 
-    let _conf = AppConfig::init();
     let mut app_conf = _conf.clone();
 
     let dest = app_conf.get_default_destination();
