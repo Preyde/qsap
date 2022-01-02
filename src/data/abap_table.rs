@@ -1,27 +1,29 @@
+use std::ops::Range;
+
 use cli_table::{print_stdout, Cell, Color, Style, Table};
 use serde::ser::SerializeStruct;
 use serde::{Deserialize, Serialize, Serializer};
-#[derive(Debug)]
-pub struct ABAPTable {
+#[derive(Debug, PartialEq, Eq)]
+pub struct AbapTable {
     headers: Vec<String>,
     data: Vec<Vec<String>>,
     table_data: Option<TableData>,
 }
 
-impl Clone for ABAPTable {
+impl Clone for AbapTable {
     fn clone(&self) -> Self {
-        ABAPTable {
+        AbapTable {
             data: self.data.clone(),
             headers: self.headers.clone(),
             table_data: None,
         }
     }
 }
-// impl Copy for ABAPTable {}
+// impl Copy for AbapTable {}
 
-impl ABAPTable {
-    pub fn new(table_data: TableData) -> ABAPTable {
-        ABAPTable {
+impl AbapTable {
+    pub fn new(table_data: TableData) -> AbapTable {
+        AbapTable {
             headers: vec![],
             data: vec![],
             table_data: Some(table_data),
@@ -99,18 +101,18 @@ impl ABAPTable {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq, Eq)]
 pub struct DataSet {
     data: Vec<Option<String>>,
 }
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq, Eq)]
 pub struct Columns {
     metadata: Metadata,
     #[serde(rename = "dataSet")]
     data_set: DataSet,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq, Eq)]
 pub struct Metadata {
     #[serde(rename = "dataPreview:name")]
     name: String,
@@ -125,7 +127,7 @@ pub struct Metadata {
     #[serde(rename = "dataPreview:isKeyFigure")]
     isKeyFigure: bool,
 }
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq, Eq)]
 pub struct TableData {
     totalRows: u32,
     isHanaAnalyticalView: bool,

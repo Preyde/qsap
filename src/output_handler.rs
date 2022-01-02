@@ -4,9 +4,11 @@ use sap_bindings::net::{AdtError, Responses};
 pub mod output_handler {}
 
 pub fn handle_output(response: Responses) {
+    // println!("{:?}", response);
     match response {
         Responses::Default(v) => println!("{}", v),
-        Responses::Table(v) => println!(""),
+        Responses::Table(tab) => tab.display(),
+        _ => (),
     }
     // match response {
     //     // Responses::Program(v) => println!("{}", v),

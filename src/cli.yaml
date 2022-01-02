@@ -18,7 +18,7 @@ args:
         multiple_occurrences: true
         about: Sets the level of verbosity
 subcommands:
-    - table:
+    - tab:
         about: controls testing features
         version: "1.3"
         args:

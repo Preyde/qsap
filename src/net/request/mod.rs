@@ -1,38 +1,28 @@
-// pub mod class;
-// pub mod class_config;
-// pub mod freestyle_config;
 pub mod behavior;
 pub mod object;
 pub mod strategy;
 
 // pub mod table;
 use std::{
-    any::Any,
-    convert::TryFrom,
     error::Error,
     fmt::{self, Display, Formatter},
 };
 
+use crate::data::abap_table::{AbapTable, SoapResponse};
 pub use crate::net::SAPClient;
-use crate::{
-    data::abap_table::{ABAPTable, SoapResponse},
-    net::Destination,
-};
 use async_trait::async_trait;
-use reqwest::{Body, StatusCode};
-
-// use self::{strategy::DefaultStrategy, table::TableResponse};
+use reqwest::StatusCode;
 
 pub trait LockHandles {
     fn get_lock_handle_path(&self) -> String;
     fn get_unlock_path(&self) -> Option<String>;
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum Responses {
     Default(String),
-    Table(SoapResponse),
-    // Class(String),
+    Table(AbapTable),
+    Detail(SoapResponse), // Class(String),
 }
 
 pub trait Config: std::fmt::Debug {
@@ -157,7 +147,6 @@ pub trait SendWith: Sync + Send {
     async fn send_with(&mut self, client: &mut SAPClient) -> Result<Box<dyn Response>, AdtError>;
 }
 
-use reqwest::Method;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -203,7 +192,22 @@ pub struct DefaultResponse {
     body: String,
     status: StatusCode,
 }
+#[async_trait]
+impl TryFromAsync<reqwest::Response> for DefaultResponse {
+    // type Error = AdtError;
 
+    async fn try_from_async(res: reqwest::Response) -> Result<Box<dyn Response>, AdtError> {
+        let status = res.status();
+        if let Ok(text) = res.text().await {
+            // println!("{}", text);
+            Ok(Box::new(DefaultResponse { body: text, status }))
+        } else {
+            Err(AdtError {
+                details: String::from("xxx"),
+            })
+        }
+    }
+}
 impl Response for DefaultResponse {
     // type Result = String;
     fn get_status(&self) -> StatusCode {
@@ -223,25 +227,25 @@ pub trait TryFromAsync<T> // where
     // type Error;
     async fn try_from_async(_: T) -> Result<Box<dyn Response>, AdtError>;
 }
-#[async_trait]
-impl<T> TryFromAsync<reqwest::Response> for T
-where
-    T: Response,
-{
-    // type Error = AdtError;
+// #[async_trait]
+// impl<T> TryFromAsync<reqwest::Response> for T
+// where
+//     T: Response,
+// {
+//     // type Error = AdtError;
 
-    async fn try_from_async(res: reqwest::Response) -> Result<Box<dyn Response>, AdtError> {
-        let status = res.status();
-        if let Ok(text) = res.text().await {
-            println!("{}", text);
-            Ok(Box::new(DefaultResponse { body: text, status }))
-        } else {
-            Err(AdtError {
-                details: String::from("xxx"),
-            })
-        }
-    }
-}
+//     async fn try_from_async(res: reqwest::Response) -> Result<Box<dyn Response>, AdtError> {
+//         let status = res.status();
+//         if let Ok(text) = res.text().await {
+//             // println!("{}", text);
+//             Ok(Box::new(DefaultResponse { body: text, status }))
+//         } else {
+//             Err(AdtError {
+//                 details: String::from("xxx"),
+//             })
+//         }
+//     }
+// }
 
 pub trait AsReq {
     fn as_req(&self) -> Box<&dyn Request>;

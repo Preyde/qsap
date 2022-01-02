@@ -1,7 +1,7 @@
 // use crate::config::Sendable;
-use reqwest::{header::HeaderMap, Client, Method, Response};
+use reqwest::{header::HeaderMap, Client, Response};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fmt::Display};
+use std::collections::HashMap;
 
 use super::request::{LockHandle, Request};
 #[derive(Debug)]
@@ -25,16 +25,16 @@ pub struct SAPClient {
     headers: Option<HashMap<String, Option<String>>>,
     session: Option<Session>,
     host: String,
-    // host: String,
+    content_type: String,
+
     stateful: bool,
     dest: Destination,
-    // app_config: AppConfig,
+
     cookies: HashMap<String, String>,
 }
 
 impl SAPClient {
     pub fn new(dest: &Destination) -> SAPClient {
-        // let mut app_conf = AppConfig::init();
         SAPClient {
             client: reqwest::Client::builder()
                 .cookie_store(true)
@@ -44,6 +44,7 @@ impl SAPClient {
             headers: None,
             session: None,
             cookies: HashMap::new(),
+            content_type: "text/html".to_string(),
             stateful: false, // app_config: app_conf,
             host: format!("{}:{}", dest.host, dest.port),
         }
@@ -54,13 +55,15 @@ impl SAPClient {
     pub fn set_stateful(&mut self, stateful: bool) {
         self.stateful = stateful;
     }
+    pub fn set_content_type(&mut self, content_type: &str) {
+        self.content_type = content_type.to_string();
+    }
     pub fn set_destination(&mut self, dest: &Destination) {
         self.dest = dest.clone();
         self.host = format!("{}:{}", dest.host, dest.port);
     }
     pub fn from_session(dest: &Destination, session: Session) -> Self {
         SAPClient {
-            // app_config: AppConfig::init(),
             client: reqwest::Client::builder()
                 .cookie_store(true)
                 .build()
@@ -69,6 +72,7 @@ impl SAPClient {
             session: Some(session),
             dest: dest.clone(),
             headers: None,
+            content_type: String::from("text/html"),
             stateful: false,
             host: format!("{}:{}", dest.host, dest.port),
         }
@@ -105,12 +109,12 @@ impl SAPClient {
             .send()
             .await
             .unwrap();
-        // println!("{:?}", res);
+
         self.set_headers_from_headermap(res.headers());
     }
     fn set_headers_from_headermap(&mut self, headers: &HeaderMap) {
         let mut hashmap: HashMap<String, Option<String>> = HashMap::new();
-        headers.iter().for_each(|(mut name, value)| {
+        headers.iter().for_each(|(name, value)| {
             if name.to_string() == "set-cookie" {
                 let s = String::from(value.to_str().unwrap());
                 let v: Vec<&str> = s.split("=").collect();
@@ -133,83 +137,7 @@ impl SAPClient {
         });
         self.headers = Some(hashmap);
     }
-    // fn get_headers_as_headermap(&mut self) -> HeaderMap {
-    //     let mut cookies: Vec<String> = vec![];
-    //     let mut map = HeaderMap::new();
 
-    //     let headers = self.headers.clone().unwrap();
-    //     for (key, val) in headers.iter() {
-    //         if key.contains("set-cookie") {
-    //             let mut new_val = val.clone().unwrap();
-    //             new_val = new_val + ";";
-    //             cookies.push(new_val);
-    //         } else {
-    //             map.append(
-    //                 HeaderName::from_str(key).unwrap(),
-    //                 HeaderValue::from_str(val.as_ref().unwrap()).unwrap(),
-    //             );
-    //         }
-    //     }
-    //     let cookie = cookies.concat();
-    //     let xxx = &cookie[0..cookie.len() - 1];
-    //     map.append(
-    //         HeaderName::from_str("Cookie").unwrap(),
-    //         HeaderValue::from_str(&xxx).unwrap(),
-    //     );
-    //     map
-    // }
-    // pub async fn delete(&mut self, config: &impl SendableConfig) -> Response {
-    //     if self.session.is_none() {
-    //         self.fetch_csrf_token().await;
-    //         println!("{:?}", self.headers.as_ref().unwrap());
-    //         self.session = Some(Session {
-    //             csrf_token: self
-    //                 .headers
-    //                 .as_ref()
-    //                 .unwrap()
-    //                 .get("x-csrf-token")
-    //                 .unwrap()
-    //                 .clone()
-    //                 .unwrap(),
-    //             session_type: if self.stateful {
-    //                 "stateful".to_string()
-    //             } else {
-    //                 "stateless".to_string()
-    //             },
-    //             session_cookie: self
-    //                 .cookies
-    //                 .get(&self.get_session_cookie_name())
-    //                 .unwrap()
-    //                 .clone(), //  session_cookie:
-    //         });
-    //     }
-
-    //     let url = format!("{0}{1}", &self.host, &config.get_path());
-
-    //     self.client
-    //         .delete(self.append_mandt_to_url(&url))
-    //         .basic_auth(&self.dest.uname, Some(&self.dest.passwd))
-    //         .header(
-    //             "x-csrf-token",
-    //             self.session.as_ref().unwrap().csrf_token.clone(),
-    //         )
-    //         .header(
-    //             "Cookie",
-    //             format!(
-    //                 "{}={}",
-    //                 &self.get_session_cookie_name(),
-    //                 self.session.as_ref().unwrap().session_cookie
-    //             ),
-    //         )
-    //         .header(
-    //             "X-sap-adt-sessiontype",
-    //             &self.session.as_ref().unwrap().session_type,
-    //         )
-    //         .body(String::from(config.get_body()))
-    //         .send()
-    //         .await
-    //         .unwrap()
-    // }
     pub async fn request<'a>(&mut self, config: Box<&'a dyn Request>) -> Response {
         if self.session.is_none() {
             self.fetch_csrf_token().await;
@@ -257,6 +185,7 @@ impl SAPClient {
                 "X-sap-adt-sessiontype",
                 &self.session.as_ref().unwrap().session_type,
             )
+            .header("Content-Type", &self.content_type)
             .body(config.get_body())
             .send()
             .await
@@ -374,168 +303,3 @@ impl SAPClient {
             .unwrap()
     }
 }
-// pub async fn send<C, T, E>(&mut self, config: C) -> Response
-// where
-//     C: Config<T, E>,
-//     T: AdtResponse<Responses>,
-//     E: AdtError,
-// {
-//     pub async fn send(&mut self, config: &impl SendableConfig) -> Response {
-//         if self.session.is_none() {
-//             self.fetch_csrf_token().await;
-//             // println!("{:?}", self.headers.as_ref().unwrap());
-//             self.session = Some(Session {
-//                 csrf_token: self
-//                     .headers
-//                     .as_ref()
-//                     .unwrap()
-//                     .get("x-csrf-token")
-//                     .unwrap()
-//                     .clone()
-//                     .unwrap(),
-//                 session_cookie: self
-//                     .cookies
-//                     .get(&self.get_session_cookie_name())
-//                     .unwrap()
-//                     .clone(), //  session_cookie:
-//                 session_type: if self.stateful {
-//                     "stateful".to_string()
-//                 } else {
-//                     "stateless".to_string()
-//                 },
-//             });
-//         }
-
-//         let url = format!("{0}{1}", &self.host, &config.get_path());
-
-//         // println!("{:?}", &self.get_session().unwrap());
-
-//         self.client
-//             .post(self.append_mandt_to_url(&url))
-//             .basic_auth(&self.dest.uname, Some(&self.dest.passwd))
-//             .header(
-//                 "x-csrf-token",
-//                 self.session.as_ref().unwrap().csrf_token.clone(),
-//             )
-//             .header(
-//                 "Cookie",
-//                 format!(
-//                     "{}={}",
-//                     &self.get_session_cookie_name(),
-//                     self.session.as_ref().unwrap().session_cookie
-//                 ),
-//             )
-//             .header(
-//                 "X-sap-adt-sessiontype",
-//                 &self.session.as_ref().unwrap().session_type,
-//             )
-//             .header("Content-Type", "text/xml")
-//             .body(String::from(config.get_body()))
-//             .send()
-//             .await
-//             .unwrap()
-//     }
-//     pub async fn put(&mut self, config: &impl SendableConfig) -> Response {
-//         if self.session.is_none() {
-//             self.fetch_csrf_token().await;
-//             println!("{:?}", self.headers.as_ref().unwrap());
-//             self.session = Some(Session {
-//                 csrf_token: self
-//                     .headers
-//                     .as_ref()
-//                     .unwrap()
-//                     .get("x-csrf-token")
-//                     .unwrap()
-//                     .clone()
-//                     .unwrap(),
-//                 session_type: if self.stateful {
-//                     "stateful".to_string()
-//                 } else {
-//                     "stateless".to_string()
-//                 },
-//                 session_cookie: self
-//                     .cookies
-//                     .get(&self.get_session_cookie_name())
-//                     .unwrap()
-//                     .clone(), //  session_cookie:
-//             });
-//         }
-
-//         let url = format!("{0}{1}", &self.host, &config.get_path());
-
-//         self.client
-//             .put(self.append_mandt_to_url(&url))
-//             .basic_auth(&self.dest.uname, Some(&self.dest.passwd))
-//             .header(
-//                 "x-csrf-token",
-//                 self.session.as_ref().unwrap().csrf_token.clone(),
-//             )
-//             .header(
-//                 "Cookie",
-//                 format!(
-//                     "{}={}",
-//                     &self.get_session_cookie_name(),
-//                     self.session.as_ref().unwrap().session_cookie
-//                 ),
-//             )
-//             .header(
-//                 "X-sap-adt-sessiontype",
-//                 &self.session.as_ref().unwrap().session_type,
-//             )
-//             .body(String::from(config.get_body()))
-//             .send()
-//             .await
-//             .unwrap()
-//     }
-//     pub async fn get(&mut self, config: &impl SendableConfig) -> Response {
-//         if self.session.is_none() {
-//             self.fetch_csrf_token().await;
-//             // println!("{:?}", self.headers.as_ref().unwrap());
-//             self.session = Some(Session {
-//                 csrf_token: self
-//                     .headers
-//                     .as_ref()
-//                     .unwrap()
-//                     .get("x-csrf-token")
-//                     .unwrap()
-//                     .clone()
-//                     .unwrap(),
-//                 session_cookie: self
-//                     .cookies
-//                     .get(&self.get_session_cookie_name())
-//                     .unwrap()
-//                     .clone(), //  session_cookie:
-//                 session_type: if self.stateful {
-//                     "stateful".to_string()
-//                 } else {
-//                     "stateless".to_string()
-//                 },
-//             });
-//         }
-//         let url = format!("{0}{1}", &self.host, &config.get_path());
-
-//         self.client
-//             .get(self.append_mandt_to_url(&url))
-//             .basic_auth("pfrank", Some("Start123!"))
-//             .header(
-//                 "x-csrf-token",
-//                 self.session.as_ref().unwrap().csrf_token.clone(),
-//             )
-//             .header(
-//                 "Cookie",
-//                 format!(
-//                     "{}={}",
-//                     &self.get_session_cookie_name(),
-//                     self.session.as_ref().unwrap().session_cookie
-//                 ),
-//             )
-//             .header(
-//                 "X-sap-adt-sessiontype",
-//                 &self.session.as_ref().unwrap().session_type,
-//             )
-//             .body(String::from(config.get_body()))
-//             .send()
-//             .await
-//             .unwrap()
-//     }
-// }

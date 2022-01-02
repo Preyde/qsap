@@ -8,7 +8,7 @@ use sap_bindings::{
     config::AppConfig,
     net::{
         behavior::{CopyTo, CopyToSys, Create, Delete},
-        object::{Class, Program},
+        object::{Class, Program, Table},
         SendWith,
     },
 };
@@ -31,6 +31,7 @@ pub mod command_match_parser {}
 pub struct CommandMatchParser<'a> {
     config: &'a AppConfig,
     prog: Option<Program>,
+    tab: Option<Table>,
     success_msg: String,
     locale: Locale, // res: Option<T>,
                     // result: Option<U>, // program: Program
@@ -54,13 +55,14 @@ impl<'a> CommandMatchParser<'a> {
             locale: match lang {
                 "DE" => Locale::De,
                 _ => Locale::En
-            }
+            },
+            tab: None
             // res: None,
             // result: None,
         }
     }
 
-    pub fn parse<'b>(&'b mut self, args: &ArgMatches) -> (Box<dyn SendWith + 'b>, String)
+    pub fn parse<'b>(&'b mut self, args: &ArgMatches) -> (Box<dyn SendWith + 'b>, Option<String>)
 // where T: Response
     {
         // i18n!("./i18n");
@@ -69,6 +71,14 @@ impl<'a> CommandMatchParser<'a> {
         match &args.subcommand() {
             // &Some(("table", matches)) => parse_table_command(matches),
             // &Some(("sql", matches)) => parse_sql_command(matches),
+            &Some(("tab", matches)) => (
+                Table::freestyle(
+                    &format!("SELECT * FROM {}", matches.value_of("name").unwrap()),
+                    matches.value_of_t("rows").ok(),
+                ),
+                None,
+            ),
+
             &Some(("new", new_matches)) => match new_matches.subcommand() {
                 Some(("prog", matches)) => {
                     // self.success_msg = self.locale.created(Name(matches.value_of("name").unwrap()));
@@ -79,7 +89,7 @@ impl<'a> CommandMatchParser<'a> {
                             matches.value_of("transport"),
                         )
                         .create(),
-                        self.locale.created(Name(matches.value_of("name").unwrap())),
+                        Some(self.locale.created(Name(matches.value_of("name").unwrap()))),
                     )
                 }
 
@@ -92,7 +102,7 @@ impl<'a> CommandMatchParser<'a> {
                         matches.value_of("package"),
                     )
                     .create(),
-                    self.locale.created(Name(matches.value_of("name").unwrap())),
+                    Some(self.locale.created(Name(matches.value_of("name").unwrap()))),
                 ),
                 Some((_, _)) => panic!(""),
                 None => panic!(""),
@@ -116,7 +126,7 @@ impl<'a> CommandMatchParser<'a> {
                                         )
                                         .unwrap(),
                                 ),
-                                self.locale.copied(From(""), To("")),
+                                Some(self.locale.copied(From(""), To(""))),
                             )
                         } else {
                             (
@@ -124,11 +134,40 @@ impl<'a> CommandMatchParser<'a> {
                                     .as_ref()
                                     .unwrap()
                                     .copy_to(matches.value_of("source").unwrap()),
-                                self.locale.copied(From(""), To("")),
+                                Some(String::from("table successfully copied")),
                             )
                         };
 
                         // *a
+                    }
+                    Some(("tab", matches)) => {
+                        self.tab = Some(Table::new(
+                            matches.value_of("source").unwrap(),
+                            matches.value_of("transport"),
+                            matches.value_of("package"),
+                        ));
+
+                        return if matches.is_present("destination") {
+                            (
+                                self.tab.as_ref().unwrap().copy_to_sys(
+                                    &self
+                                        .config
+                                        .get_destination_from_sys(
+                                            &matches.value_of("destination").unwrap(),
+                                        )
+                                        .unwrap(),
+                                ),
+                                Some(self.locale.copied(From(""), To(""))),
+                            )
+                        } else {
+                            (
+                                self.prog
+                                    .as_ref()
+                                    .unwrap()
+                                    .copy_to(matches.value_of("source").unwrap()),
+                                Some(self.locale.copied(From(""), To(""))),
+                            )
+                        };
                     }
                     // Some(("tab", matches)) => self.parse_copy_database_command(matches),
                     Some((&_, _)) => panic!(""),
@@ -145,7 +184,7 @@ impl<'a> CommandMatchParser<'a> {
                             matches.value_of("transport"),
                         )
                         .delete(),
-                        self.locale.deleted(Name(matches.value_of("name").unwrap())),
+                        Some(self.locale.deleted(Name(matches.value_of("name").unwrap()))),
                     )
                 }
 

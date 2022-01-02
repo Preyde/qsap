@@ -1,8 +1,6 @@
 use crate::command_parser::CommandMatchParser;
 use crate::output_handler::{handle_error, handle_output};
 use clap::{load_yaml, App};
-use i18n_codegen::i18n;
-use sap_bindings::net::object::Program;
 use sap_bindings::net::{Responses, SAPClient};
 use std::env::args_os;
 use std::process::exit;
@@ -25,9 +23,9 @@ async fn main() {
 
     let _conf = AppConfig::init();
     let mut app_conf = _conf.clone();
-    // let mut prog = Program::new("ZPF_1511_2", None, None);
+
     let dest = app_conf.get_default_destination();
-    // let mut config = prog.create();
+
     let mut parser = CommandMatchParser::new(&_conf, &dest.lang);
     let parsed = parser.parse(&matches);
     let mut config = parsed.0;
@@ -46,18 +44,14 @@ async fn main() {
     }
 
     match config.send_with(&mut client).await {
-        Ok(res) => {
-            if res.get_value() == Responses::Default(String::new()) {
-                handle_output(Responses::Default(success_msg))
-            } else {
-                handle_output(res.get_value())
-            }
-        }
+        Ok(res) => match success_msg {
+            Some(msg) => handle_output(Responses::Default(msg)),
+            None => handle_output(res.get_value()),
+        },
         Err(e) => handle_error(&e),
     }
-    // let success_msg = parser.get_success_smg();
+
     if update_session_file {
-        // AppConfig::set_session_for_sys(&mut app_conf, "ITK", &client.get_session().unwrap());
         app_conf.set_session_for_sys("ITK", &client.get_session().unwrap());
     }
     app_conf.update_file();
