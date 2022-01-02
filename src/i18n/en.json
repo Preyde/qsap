@@ -1,0 +1,5 @@
+{
+    "created": "Program {Name} has been created",
+    "copied": "{From} copied to {To}",
+    "deleted": "{Name} has been deleted"
+}
