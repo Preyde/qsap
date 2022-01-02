@@ -25,7 +25,7 @@ use sap_bindings::{
 //     data::abap_table::ABAPTable,
 //     net::Destination,
 // };
-i18n!("./i18n");
+i18n!("./src/i18n");
 pub mod command_match_parser {}
 
 pub struct CommandMatchParser<'a> {
