@@ -61,7 +61,12 @@ impl<'a> CommandMatchParser<'a> {
             // result: None,
         }
     }
-
+    pub fn is_check_command(&self, matches: &ArgMatches) -> bool {
+        match matches.subcommand() {
+            Some(("check", matches)) => true,
+            _ => false,
+        }
+    }
     pub fn parse<'b>(&'b mut self, args: &ArgMatches) -> (Box<dyn SendWith + 'b>, Option<String>)
 // where T: Response
     {
@@ -140,6 +145,7 @@ impl<'a> CommandMatchParser<'a> {
 
                         // *a
                     }
+
                     Some(("tab", matches)) => {
                         self.tab = Some(Table::new(
                             matches.value_of("source").unwrap(),
@@ -193,8 +199,9 @@ impl<'a> CommandMatchParser<'a> {
                 Some((_, _)) => panic!(""),
                 None => panic!(""),
             },
+
             // &Some(("delete", matches)) => parse_delete_program_command(matches),
-            &Some((_, _)) => panic!(""),
+            &Some((_, _)) => std::process::exit(0),
             None => panic!(""),
         }
     }

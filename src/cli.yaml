@@ -183,6 +183,9 @@ subcommands:
                 required: false
                 takes_value: true
                 alias: "prog_name"
+    - check:
+        about: "destination check"
+        
          
                
 

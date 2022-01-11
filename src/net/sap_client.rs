@@ -49,6 +49,15 @@ impl SAPClient {
             host: format!("{}:{}", dest.host, dest.port),
         }
     }
+    pub async fn test_destination(&self) -> Result<(), reqwest::Error> {
+        let url = format!("{0}{1}", &self.host, "/sap/bc/adt/compatibility/graph");
+        // println!("{}", self.append_mandt_to_url(&url));
+        self.client
+            .get(self.append_mandt_to_url(&url))
+            .send()
+            .await?;
+        Ok(())
+    }
     pub fn clear_session(&mut self) {
         self.session = None;
     }
@@ -94,7 +103,7 @@ impl SAPClient {
     }
 
     async fn fetch_csrf_token(&mut self) {
-        let res = &self
+        let result = &self
             .client
             .get(format!(
                 "{}{}",
@@ -107,10 +116,17 @@ impl SAPClient {
             .basic_auth(&self.dest.uname, Some(&self.dest.passwd))
             .header("x-csrf-token", "Fetch")
             .send()
-            .await
-            .unwrap();
+            .await;
 
-        self.set_headers_from_headermap(res.headers());
+        let res = match result {
+            Ok(res) => self.set_headers_from_headermap(res.headers()),
+            Err(e) => {
+                if e.is_connect() {
+                    println!("Couldn't connect to Server. Maybe you forgot turning your VPN on?");
+                    std::process::exit(0);
+                }
+            }
+        };
     }
     fn set_headers_from_headermap(&mut self, headers: &HeaderMap) {
         let mut hashmap: HashMap<String, Option<String>> = HashMap::new();

@@ -213,6 +213,9 @@ impl AppConfig {
         // println!("{:?}", dest);
         Some(dest)
     }
+    pub fn get_all_destinations(&self) -> Vec<Destination> {
+        self.destination_manager.get_destinations().clone()
+    }
 
     pub fn get_default_sys(&self) -> String {
         self.config.get("_default", "sys").unwrap()

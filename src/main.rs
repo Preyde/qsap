@@ -1,11 +1,13 @@
 use crate::command_parser::CommandMatchParser;
 use crate::output_handler::{handle_error, handle_output};
-use clap::{load_yaml, App};
+use clap::{load_yaml, App, SubCommand};
+use sap_bindings::net::object::Program;
 use sap_bindings::net::{Responses, SAPClient};
 use std::env::args_os;
 use std::process::exit;
 pub mod command_parser;
 pub mod output_handler;
+use sap_bindings::net::behavior::Create;
 
 use sap_bindings::config::AppConfig;
 
@@ -27,11 +29,7 @@ async fn main() {
     let mut app_conf = _conf.clone();
 
     let dest = app_conf.get_default_destination();
-
     let mut parser = CommandMatchParser::new(&_conf, &dest.lang);
-    let parsed = parser.parse(&matches);
-    let mut config = parsed.0;
-    let success_msg = parsed.1;
 
     let mut client: SAPClient;
 
@@ -44,6 +42,34 @@ async fn main() {
         client = SAPClient::new(&dest);
         update_session_file = true;
     }
+
+    if parser.is_check_command(&matches) {
+        for dest in app_conf.get_all_destinations().iter() {
+            match client.test_destination().await {
+                Ok(()) => println!("{}-{}: ✓", dest.sys_id.to_uppercase(), dest.mandt),
+                Err(e) => println!("{}-{}: ✗", dest.sys_id.to_uppercase(), dest.mandt),
+            }
+        }
+    }
+
+    let parsed = parser.parse(&matches);
+    let mut config = parsed.0;
+    let success_msg = parsed.1;
+
+    println!("{:?}", matches.subcommand());
+    // match matches.subcommand() {
+    //     Some(("check", matches)) => match client.test_destination().await {
+    //         Ok(()) => println!("Check for default destination was successful"),
+    //         Err(e) => println!("xxxxxxxxxxxxxxx"),
+    //     },
+    //     _ => println!("yyyyyyyyyyyyyyy"),
+    // }
+    // if Some(matches.subcommand()) == ("", _) {
+    //     match client.test_destination().await {
+    //         Some(()) => println("Check for default destination was successful"),
+    //         Err(e) => println!("{}", e),
+    //     }
+    // }
 
     match config.send_with(&mut client).await {
         Ok(res) => match success_msg {
