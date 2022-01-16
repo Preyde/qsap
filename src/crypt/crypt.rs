@@ -73,12 +73,12 @@ impl Crypt {
 
         buffer.to_base64(STANDARD)
     }
-    pub fn decrypt(&mut self, encrypted_passwd: &str) -> Base64String {
+    pub fn decrypt(&mut self, encrypted_passwd: &str) -> Option<Base64String> {
         let mut buffer = encrypted_passwd.from_base64().expect("No valid Base64");
         self.cipher
             .decrypt_in_place(&self.nonce, &self.key, &mut buffer)
-            .expect("decryption failure!");
+            .ok()?;
 
-        String::from_utf8(buffer).expect("No valid UTF-8")
+        Some(String::from_utf8(buffer).expect("No valid UTF-8"))
     }
 }

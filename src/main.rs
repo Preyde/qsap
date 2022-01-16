@@ -50,30 +50,16 @@ async fn main() {
                 Err(e) => println!("{}-{}: [31m✗[0m", dest.sys_id.to_uppercase(), dest.mandt),
             }
         }
+        exit(0);
     }
     if parser.is_dest_command(&matches) {
-        AppConfig::open_destination_file()
+        AppConfig::open_destination_file();
+        exit(0);
     }
-    //  let dest: Destination = {...}
 
     let parsed = parser.parse(&matches);
     let mut config = parsed.0;
     let success_msg = parsed.1;
-
-    println!("{:?}", matches.subcommand());
-    // match matches.subcommand() {
-    //     Some(("check", matches)) => match client.test_destination().await {
-    //         Ok(()) => println!("Check for default destination was successful"),
-    //         Err(e) => println!("xxxxxxxxxxxxxxx"),
-    //     },
-    //     _ => println!("yyyyyyyyyyyyyyy"),
-    // }
-    // if Some(matches.subcommand()) == ("", _) {
-    //     match client.test_destination().await {
-    //         Some(()) => println("Check for default destination was successful"),
-    //         Err(e) => println!("{}", e),
-    //     }
-    // }
 
     match config.send_with(&mut client).await {
         Ok(res) => match success_msg {
