@@ -185,6 +185,8 @@ subcommands:
                 alias: "prog_name"
     - check:
         about: "destination check"
+    - dest:
+        about: "Open the destination file"
         
          
                

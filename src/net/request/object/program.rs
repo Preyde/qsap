@@ -6,9 +6,27 @@ use crate::net::{
     },
     Destination,
 };
-
+// pub sys_id: String,
+// pub host: String,
+// pub port: u16,
+// pub uname: String,
+// pub passwd: String,
+// pub mandt: String,
+// pub lang: String,
 use reqwest::Method;
-
+/// contains operations to receive a request for the sapClient
+///
+/// # example
+/// ```
+/// let dest: Destination = {...}
+///
+/// let client = SAPClient::new(&dest);
+///
+///     Program::new("ZPROG", "ZPACKAGE", "REQ908070")
+///     .create()
+///     .send_with(&mut client)
+///     .await;
+/// ```
 #[derive(Debug)]
 pub struct Program {
     body: String,

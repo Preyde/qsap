@@ -7,6 +7,7 @@ use crossterm::event::KeyCode;
 use crossterm::event::KeyEvent;
 use crossterm::event::KeyModifiers;
 use ini::configparser::ini::Ini;
+use open;
 use std::str::FromStr;
 
 use super::destination_manager::DestinationManager;
@@ -22,39 +23,53 @@ pub struct AppConfig {
 }
 
 impl AppConfig {
+    fn get_path(filename: &str) -> String {
+        format!(
+            "{}\\sapCli\\{}",
+            std::env::var("APPDATA").unwrap(),
+            filename
+        )
+    }
+    pub fn open_destination_file() {
+        open::that(AppConfig::get_path("destinations.json")).unwrap_or_else(|e| println!("Could not open destination file. Make sure it is at path: C:\\Users\\[Your username]\\AppData\\Roaming\\sapCli\\destinations.json"))
+    }
     pub fn init() -> Self {
-        let get_path = |filename: &str| {
-            format!(
-                "{}\\sapCli\\{}",
-                std::env::var("APPDATA").unwrap(),
-                filename
-            )
-        };
+        // let get_path = |filename: &str| {
+        //     format!(
+        //         "{}\\sapCli\\{}",
+        //         std::env::var("APPDATA").unwrap(),
+        //         filename
+        //     )
+        // };
         // println!("{}", get_path(""));
-        if !std::path::Path::new(&get_path("")).exists() {
-            std::fs::create_dir(&get_path(""));
+        if !std::path::Path::new(&AppConfig::get_path("")).exists() {
+            std::fs::create_dir(&AppConfig::get_path(""));
         }
 
         let mut conf = AppConfig {
             config: Ini::new(),
             sessions_config: Ini::new(),
-            password_manager: PasswordManager::init(get_path("shadow.ini")),
-            destination_manager: DestinationManager::init(get_path("destinations.json")),
+            password_manager: PasswordManager::init(AppConfig::get_path("shadow.ini")),
+            destination_manager: DestinationManager::init(AppConfig::get_path("destinations.json")),
         };
 
         // println!("{}", get_path("sessions.ini"));
-        if conf.config.load(&get_path("settings.ini")).is_err() {
-            std::fs::File::create(&get_path("settings.ini"));
+        if conf
+            .config
+            .load(&AppConfig::get_path("settings.ini"))
+            .is_err()
+        {
+            std::fs::File::create(&AppConfig::get_path("settings.ini"));
             conf.set_default_sys("ITK");
 
             conf.update_file();
         }
         if conf
             .sessions_config
-            .load(&get_path("sessions.ini"))
+            .load(&AppConfig::get_path("sessions.ini"))
             .is_err()
         {
-            std::fs::File::create(&get_path("sessions.ini"));
+            std::fs::File::create(&AppConfig::get_path("sessions.ini"));
         }
 
         // let dir_path = format!(

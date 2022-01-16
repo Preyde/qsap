@@ -61,9 +61,21 @@ impl<'a> CommandMatchParser<'a> {
             // result: None,
         }
     }
+    pub fn is_command(&self, command: &str, matches: &ArgMatches) -> bool {
+        match matches.subcommand() {
+            Some((command, matches)) => true,
+            _ => false,
+        }
+    }
     pub fn is_check_command(&self, matches: &ArgMatches) -> bool {
         match matches.subcommand() {
             Some(("check", matches)) => true,
+            _ => false,
+        }
+    }
+    pub fn is_dest_command(&self, matches: &ArgMatches) -> bool {
+        match matches.subcommand() {
+            Some(("dest", matches)) => true,
             _ => false,
         }
     }
@@ -199,6 +211,7 @@ impl<'a> CommandMatchParser<'a> {
                 Some((_, _)) => panic!(""),
                 None => panic!(""),
             },
+            // &Some(("dest", matches)) => AppConfig::open_destination_file(),
 
             // &Some(("delete", matches)) => parse_delete_program_command(matches),
             &Some((_, _)) => std::process::exit(0),

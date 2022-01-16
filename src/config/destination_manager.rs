@@ -58,7 +58,10 @@ impl DestinationManager {
     }
 
     pub fn write(&self) {
-        write(&self.path, serde_json::to_string(&self.dests).unwrap());
+        write(
+            &self.path,
+            serde_json::to_string_pretty(&self.dests).unwrap(),
+        );
     }
 
     pub fn get_dests_plain_passwd(&self) -> &Vec<Destination> {

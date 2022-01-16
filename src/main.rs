@@ -46,11 +46,15 @@ async fn main() {
     if parser.is_check_command(&matches) {
         for dest in app_conf.get_all_destinations().iter() {
             match client.test_destination().await {
-                Ok(()) => println!("{}-{}: ✓", dest.sys_id.to_uppercase(), dest.mandt),
-                Err(e) => println!("{}-{}: ✗", dest.sys_id.to_uppercase(), dest.mandt),
+                Ok(()) => println!("{}-{}: [92m✓[0m", dest.sys_id.to_uppercase(), dest.mandt),
+                Err(e) => println!("{}-{}: [31m✗[0m", dest.sys_id.to_uppercase(), dest.mandt),
             }
         }
     }
+    if parser.is_dest_command(&matches) {
+        AppConfig::open_destination_file()
+    }
+    //  let dest: Destination = {...}
 
     let parsed = parser.parse(&matches);
     let mut config = parsed.0;
