@@ -12,7 +12,7 @@
 
 # Introduction
 
-This Project is a Command Line Interface, where you can interact with your SAP-Systen. This is not a full-featured client, rather an additional tool you can use alongside your IDE while developing.
+This Project is a Command Line Interface written in Rust, where you can interact with your SAP-Systen. This is not a full-featured client, rather an additional tool you can use alongside your IDE while developing.
 
 Currently the project is in an early phase and supports things like small operations on the data dictionary, displaying the content of a database table and copying a database table to another system.
 
