@@ -28,8 +28,24 @@ async fn main() {
 
     let mut app_conf = _conf.clone();
 
+    let mut parser = CommandMatchParser::new(&_conf, "EN");
+    if parser.is_dest_command(&matches) {
+        AppConfig::open_destination_file();
+        exit(0);
+    }
+    if parser.is_settings_command(&matches) {
+        if let Some(sys_id) = matches
+            .subcommand_matches("settings")
+            .unwrap()
+            .value_of("default_sys")
+        {
+            app_conf.set_default_sys(sys_id);
+            app_conf.update_file();
+            println!("The default system is now {}", sys_id);
+            exit(0);
+        }
+    }
     let dest = app_conf.get_default_destination();
-    let mut parser = CommandMatchParser::new(&_conf, &dest.lang);
 
     let mut client: SAPClient;
 
@@ -50,10 +66,6 @@ async fn main() {
                 Err(e) => println!("{}-{}: [31m✗[0m", dest.sys_id.to_uppercase(), dest.mandt),
             }
         }
-        exit(0);
-    }
-    if parser.is_dest_command(&matches) {
-        AppConfig::open_destination_file();
         exit(0);
     }
 

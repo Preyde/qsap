@@ -61,15 +61,15 @@ impl<'a> CommandMatchParser<'a> {
             // result: None,
         }
     }
-    pub fn is_command(&self, command: &str, matches: &ArgMatches) -> bool {
-        match matches.subcommand() {
-            Some((command, matches)) => true,
-            _ => false,
-        }
-    }
     pub fn is_check_command(&self, matches: &ArgMatches) -> bool {
         match matches.subcommand() {
             Some(("check", matches)) => true,
+            _ => false,
+        }
+    }
+    pub fn is_settings_command(&self, matches: &ArgMatches) -> bool {
+        match matches.subcommand() {
+            Some(("settings", matches)) => true,
             _ => false,
         }
     }

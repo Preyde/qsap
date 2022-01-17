@@ -26,13 +26,13 @@ pub struct AppConfig {
 impl AppConfig {
     fn get_path(filename: &str) -> String {
         format!(
-            "{}\\sapCli\\{}",
+            "{}\\sap_cli\\{}",
             std::env::var("APPDATA").unwrap(),
             filename
         )
     }
     pub fn open_destination_file() {
-        open::that(AppConfig::get_path("destinations.json")).unwrap_or_else(|e| println!("Could not open destination file. Make sure it is at path: C:\\Users\\[Your username]\\AppData\\Roaming\\sapCli\\destinations.json"))
+        open::that(AppConfig::get_path("destinations.json")).unwrap_or_else(|e| println!("Could not open destination file. Make sure it is at path: C:\\Users\\[Your username]\\AppData\\Roaming\\sap_cli\\destinations.json"))
     }
     pub fn init() -> Self {
         if !std::path::Path::new(&AppConfig::get_path("")).exists() {
@@ -246,9 +246,21 @@ impl AppConfig {
     }
 
     pub fn get_default_destination(&self) -> Destination {
+        let default_sys = match self.get_default_sys() {
+            Some(sys_id) => sys_id,
+            None => self
+                .destination_manager
+                .get_destinations()
+                .first()
+                .as_ref()
+                .unwrap()
+                .sys_id
+                .to_string(),
+        };
+
         let mut dest = self
             .destination_manager
-            .get_destination(&self.get_default_sys())
+            .get_destination(&default_sys)
             .unwrap();
 
         self.decrypt_password(&mut dest, &self.ask_for_master_password());
@@ -300,12 +312,14 @@ impl AppConfig {
     pub fn update_file(&mut self) {
         let get_path = |filename: &str| {
             format!(
-                "{}\\sapCli\\{}",
+                "{}\\sap_cli\\{}",
                 std::env::var("APPDATA").unwrap(),
                 filename
             )
         };
         self.sessions_config.write(&get_path("sessions.ini"));
+        // self.sessions_config.write(&get_path("destinations.json"));
+        self.config.write(&get_path("settings.ini"));
     }
     pub fn get_destination_from_sys(&self, sys_id: &str) -> Option<Destination> {
         let mut dest = self
@@ -323,8 +337,8 @@ impl AppConfig {
         self.destination_manager.get_destinations().clone()
     }
 
-    pub fn get_default_sys(&self) -> String {
-        self.config.get("_default", "sys").unwrap()
+    pub fn get_default_sys(&self) -> Option<String> {
+        self.config.get("_default", "sys")
     }
     pub fn set_default_sys(&mut self, sys_id: &str) {
         self.config

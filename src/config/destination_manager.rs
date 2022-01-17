@@ -1,5 +1,8 @@
 use serde_json::from_str;
-use std::fs::{read_to_string, write};
+use std::{
+    fs::{read_to_string, write},
+    path::Path,
+};
 
 use crate::net::Destination;
 #[derive(Debug, Clone)]
@@ -17,6 +20,11 @@ impl DestinationManager {
             path,
         };
 
+        if !Path::new(&this.path).exists() {
+            std::fs::File::create(&this.path);
+            this.initial_file_write()
+        }
+        // this.path = path;
         DestinationManager::read_destination_file(&mut this);
         this.look_for_unencrypted();
         this
@@ -45,6 +53,7 @@ impl DestinationManager {
             .iter()
             .filter(|dest| {
                 dest.passwd.to_lowercase() != format!("{{{}}}", dest.sys_id.to_lowercase())
+                    && dest.passwd != ""
             })
             .map(|dest| dest.clone())
             .collect();
@@ -66,5 +75,19 @@ impl DestinationManager {
 
     pub fn get_dests_plain_passwd(&self) -> &Vec<Destination> {
         &self.dests_plain_text_passwd
+    }
+    fn initial_file_write(&self) {
+        let mut default: Vec<Destination> = Vec::new();
+        default.push(Destination {
+            sys_id: String::new(),
+            host: String::new(),
+            uname: String::new(),
+            passwd: String::new(),
+            port: 1234,
+            lang: String::new(),
+            mandt: String::new(),
+        });
+
+        write(&self.path, serde_json::to_string_pretty(&default).unwrap());
     }
 }

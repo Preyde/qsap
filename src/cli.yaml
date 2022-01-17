@@ -187,6 +187,13 @@ subcommands:
         about: "destination check"
     - dest:
         about: "Open the destination file"
+    - settings:
+        args: 
+        - default_sys:
+            about: set the default system to work within
+            short: s
+            long: def-sys
+            takes_value: true
         
          
                
