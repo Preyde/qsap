@@ -42,19 +42,19 @@ To connect the application to your sap-system, you need to provide the server de
 sap_cli dest
 ```
 
-The destination file with an empty entry should open and looks like the following:
+The destination file with an empty entry should open and has the following structure:
 
 ```json
 [
-  {
-    "sys_id": "",   // server id eg. "ITK"
-    "host": "",     // server host
-    "port": 1234,   // server port
-    "uname": "",    // Your system username
-    "passwd": "",   // Your password
-    "mandt": "",    // client eg. 300
-    "lang": ""      // language eg. "EN"
-  }
+   {
+    "sys_id": "ITK", 
+    "host": "https://example-system-itk.com/",    
+    "port": 1234,  
+    "uname": "USER123",  
+    "passwd": "password123",  
+    "mandt": "123", 
+    "lang": "EN"
+  },
 ]
 ```
 
@@ -62,13 +62,13 @@ Fill out those 7 fields. To configure multiple system connections just add an ad
 ```json
 [
   {
-    "sys_id": "KTI", 
-    "host": "https://system-kti.com/",    
+    "sys_id": "ITK", 
+    "host": "https://example-system-itk.com/",    
     "port": 1234,  
     "uname": "USER123",  
     "passwd": "password123",  
-    "mandt": "300", 
-    "lang": "DE"
+    "mandt": "123", 
+    "lang": "EN"
   },
     {
     "sys_id": "AEI", 
@@ -77,7 +77,7 @@ Fill out those 7 fields. To configure multiple system connections just add an ad
     "uname": "USER123", 
     "passwd": "password123",
     "mandt": "200", 
-    "lang": "EN" 
+    "lang": "DE" 
   }
 ]
 ```
