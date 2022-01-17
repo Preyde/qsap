@@ -22,7 +22,7 @@ To download the executable click on the following link and choose sap_cli.exe.
 
 https://github.com/Preyde/sap_cli/releases/tag/v0.3.0
 
-Also you can just click [here](https://github.com/Preyde/sap_cli/releases/tag/v0.3.0/sap_cli.exe).
+Also you can just click [here](https://github.com/Preyde/sap_cli/releases/download/v0.3.0/sap_cli.exe).
 
 
 
