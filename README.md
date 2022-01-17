@@ -18,9 +18,12 @@ Currently the project is in an early phase and supports things like small operat
 
 # Installation
 
-The executable can be download from GitHub.
+To download the executable click on the following link and choose sap_cli.exe.
 
-To do that click the following URL: ""
+https://github.com/Preyde/sap_cli/releases/tag/v0.3.0
+
+Also you can just click [here](https://github.com/Preyde/sap_cli/releases/tag/v0.3.0/sap_cli.exe).
+
 
 
 # Configuration
@@ -105,10 +108,6 @@ sap_cli settings -s "{sys_id}"
 ```
 The sys_id in the command is the one you put in your destination file.
 
-
-```
-sap_cli settings -s "KTI"
-```
 
 Now the configuration is done and you can start playing around.
 
