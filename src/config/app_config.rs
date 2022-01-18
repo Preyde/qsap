@@ -193,7 +193,11 @@ impl AppConfig {
                 Event::Key(KeyEvent {
                     code: KeyCode::Enter,
                     modifiers: no_modifiers,
-                }) => break,
+                }) => {
+                    print!("\n");
+                    io::stdout().flush().unwrap();
+                    break;
+                }
                 // Key(KeyEvent::) => {
                 //     print!("{}", "\r".repeat(password.len()));
                 //     password.pop();
@@ -204,9 +208,9 @@ impl AppConfig {
                     code: KeyCode::Backspace,
                     modifiers: no_modifiers,
                 }) => {
-                    print!("\r{}", "  ".repeat(password.len()));
+                    print!("\rPassword: {}", "  ".repeat(password.len()));
                     password.pop();
-                    print!("\r{}", "*".repeat(password.len()));
+                    print!("\rPassword: {}", "*".repeat(password.len()));
                     io::stdout().flush().unwrap();
                 }
                 Key(key) => {
@@ -268,8 +272,17 @@ impl AppConfig {
         dest
     }
     fn ask_for_master_password(&self) -> String {
-        println!("Password: ");
-        self.wait_for_password_input()
+        match std::env::var("tmp_pw") {
+            Ok(pw) => pw,
+            Err(e) => {
+                print!("Password: ");
+                io::stdout().flush().unwrap();
+                let pw = self.wait_for_password_input();
+                // std::process::Command::new(format!(r#"set tmp_pw="{}""#, pw)).output();
+
+                pw
+            }
+        }
     }
 
     pub fn get_session_from_sys(&self, sys_id: &str) -> Option<Session> {

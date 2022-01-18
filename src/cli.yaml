@@ -1,5 +1,5 @@
 name: sapCli
-version: "1.1"
+version: "0.3.0"
 author: Pascal Frank <pascalfrank17@gmail.com>
 about: A Command Line Inerface to work with SAP Systems
 args:

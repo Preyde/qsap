@@ -54,10 +54,15 @@ impl AbapTable {
     }
 
     fn extract_data(&mut self) {
-        let len = 0..self.table_data.as_ref().unwrap().columns[0]
+        let len = match &self.table_data.as_ref().unwrap().columns[0]
             .data_set
+            // .as_ref()
+            // .unwrap()
             .data
-            .len();
+        {
+            Some(v) => 0..v.len(),
+            None => return,
+        };
 
         let mut i: usize = 0;
         let mut data: Vec<Vec<String>> = vec![];
@@ -66,7 +71,7 @@ impl AbapTable {
             let mut data_vec: Vec<String> = vec![];
 
             for col in self.table_data.as_ref().unwrap().columns.iter() {
-                let data = &col.data_set.data[i];
+                let data = &col.data_set.data.as_ref().unwrap()[i];
 
                 data_vec.push(Self::option_to_string(data));
             }
@@ -103,7 +108,7 @@ impl AbapTable {
 
 #[derive(Debug, Deserialize, PartialEq, Eq)]
 pub struct DataSet {
-    data: Vec<Option<String>>,
+    data: Option<Vec<Option<String>>>,
 }
 #[derive(Debug, Deserialize, PartialEq, Eq)]
 pub struct Columns {
