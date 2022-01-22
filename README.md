@@ -1,4 +1,6 @@
-# Third Party Command Line Interface for SAP
+# quick_sap
+
+# a third party command line interface to work with sap systems
 
 ## Table of Content
 
