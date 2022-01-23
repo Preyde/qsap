@@ -179,6 +179,7 @@ impl AppConfig {
         let password_repeat = self.wait_for_password_input();
 
         if password == password_repeat {
+            // println!("{:?}", std::env::var("pw"));
             self.encryption_process(&password);
         } else {
             eprintln!("Passwords do not match");
@@ -272,12 +273,13 @@ impl AppConfig {
         dest
     }
     fn ask_for_master_password(&self) -> String {
-        match std::env::var("tmp_pw") {
+        match std::env::var("pw") {
             Ok(pw) => pw,
             Err(e) => {
                 print!("Password: ");
                 io::stdout().flush().unwrap();
                 let pw = self.wait_for_password_input();
+                std::env::set_var("pw", &pw);
                 // std::process::Command::new(format!(r#"set tmp_pw="{}""#, pw)).output();
 
                 pw

@@ -32,5 +32,5 @@ crossterm = "0.22.1"
 format_xml = "0.2.0"
 i18n_codegen = "0.1.1"
 open = "2.0.2"
-
+rustyline = "9.1.0"
 
