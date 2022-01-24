@@ -1,7 +1,7 @@
 use crate::net::{
     behavior::{CopyTo, CopyToSys, Create, Delete, Source},
     request::{
-        strategy::{CopyToSysStrategy, DefaultStrategy, LockStrategy},
+        strategy::{CopyToSysSender, DefaultSender, LockSender},
         DefaultResponse, LockObject, SendWith,
     },
     Destination,
@@ -76,7 +76,7 @@ impl Program {
 impl CopyToSys for Program {
     // type Response = DefaultResponse;
     fn copy_to_sys<'a>(&'a self, dest: &Destination) -> Box<dyn SendWith + 'a> {
-        let x: Box<CopyToSysStrategy<Program, DefaultResponse>> = Box::new(CopyToSysStrategy::new(
+        let x: Box<CopyToSysSender<Program, DefaultResponse>> = Box::new(CopyToSysSender::new(
             // LockObject::new(&"/sap/bc/adt/programs/programs/"),
             self,
             dest.clone(),
@@ -88,7 +88,7 @@ impl CopyToSys for Program {
 impl Source for Program {
     // type Response = DefaultResponse;
     fn source(&self) -> Box<dyn SendWith> {
-        let x: Box<DefaultStrategy<DefaultResponse>> = Box::new(DefaultStrategy::new(
+        let x: Box<DefaultSender<DefaultResponse>> = Box::new(DefaultSender::new(
             String::new(),
             format!(
                 "/sap/bc/adt/programs/programs/{}/source/main",
@@ -99,7 +99,7 @@ impl Source for Program {
         x
     }
     fn update_source(&self, source: &str) -> Box<dyn SendWith> {
-        let x: Box<LockStrategy<DefaultResponse>> = Box::new(LockStrategy::new(
+        let x: Box<LockSender<DefaultResponse>> = Box::new(LockSender::new(
             source.to_string(),
             // source.to_string(),
             // format!(
@@ -122,7 +122,7 @@ impl Source for Program {
 
 impl Create for Program {
     fn create(&self) -> Box<dyn SendWith> {
-        let x: Box<DefaultStrategy<DefaultResponse>> = Box::new(DefaultStrategy::new(
+        let x: Box<DefaultSender<DefaultResponse>> = Box::new(DefaultSender::new(
             format!(
                 r#"<?xml version="1.0" encoding="UTF-8"?>
                                     <program:abapProgram xmlns:program="http://www.sap.com/adt/programs/programs" xmlns:adtcore="http://www.sap.com/adt/core" 
@@ -147,7 +147,7 @@ impl Create for Program {
 impl CopyTo for Program {
     // type Response = DefaultResponse;
     fn copy_to(&self, target_name: &str) -> Box<dyn SendWith> {
-        let x: Box<DefaultStrategy<DefaultResponse>> = Box::new(DefaultStrategy::new(
+        let x: Box<DefaultSender<DefaultResponse>> = Box::new(DefaultSender::new(
             format!(
                 r#"<?xml version="1.0" encoding="UTF-8"?><program:abapProgram xmlns:program="http://www.sap.com/adt/programs/programs" 
                     xmlns:abapsource="http://www.sap.com/adt/abapsource" 
@@ -174,7 +174,7 @@ impl CopyTo for Program {
 impl Delete for Program {
     // type Response = DefaultResponse;
     fn delete(&mut self) -> Box<dyn SendWith> {
-        let x: Box<LockStrategy<DefaultResponse>> = Box::new(LockStrategy::new(
+        let x: Box<LockSender<DefaultResponse>> = Box::new(LockSender::new(
             String::new(),
             Method::DELETE,
             LockObject::new(&format!("/sap/bc/adt/programs/programs/{}", self.prog_name)),

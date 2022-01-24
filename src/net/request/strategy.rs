@@ -6,7 +6,7 @@ use super::{
 use crate::net::Destination;
 use async_trait::async_trait;
 use reqwest::Method;
-pub struct DefaultStrategy<T>
+pub struct DefaultSender<T>
 where
     T: Response + TryFromAsync<reqwest::Response>,
 {
@@ -15,12 +15,12 @@ where
     method: Method,
     res: Option<T>,
 }
-impl<T> DefaultStrategy<T>
+impl<T> DefaultSender<T>
 where
     T: Response + TryFromAsync<reqwest::Response>,
 {
     pub fn new(body: String, path: String, method: Method) -> Self {
-        DefaultStrategy {
+        DefaultSender {
             body,
             path,
             method,
@@ -29,7 +29,7 @@ where
     }
 }
 
-impl<T> Request for DefaultStrategy<T>
+impl<T> Request for DefaultSender<T>
 where
     T: Response + TryFromAsync<reqwest::Response> + Sync + Send,
 {
@@ -44,7 +44,7 @@ where
     }
 }
 #[async_trait]
-impl<T> SendWith for DefaultStrategy<T>
+impl<T> SendWith for DefaultSender<T>
 where
     T: Response + TryFromAsync<reqwest::Response> + Sync + Send,
 {
@@ -64,7 +64,7 @@ where
 trait IntoSendWith<T> {
     fn into_send_with(self) -> Box<dyn SendWith>;
 }
-impl<T> IntoSendWith<T> for DefaultStrategy<T>
+impl<T> IntoSendWith<T> for DefaultSender<T>
 where
     T: Response + TryFromAsync<reqwest::Response> + 'static,
     // U: Sync + Send + 'static,
@@ -74,20 +74,20 @@ where
     }
 }
 
-pub struct LockStrategy<T> {
+pub struct LockSender<T> {
     body: String,
     method: Method,
     lock_obj: LockObject,
     x: Option<T>,
 }
-impl<T> AsRef<LockStrategy<T>> for LockStrategy<T> {
-    fn as_ref(&self) -> &LockStrategy<T> {
+impl<T> AsRef<LockSender<T>> for LockSender<T> {
+    fn as_ref(&self) -> &LockSender<T> {
         self.as_ref()
     }
 }
-impl<T> LockStrategy<T> {
+impl<T> LockSender<T> {
     pub fn new(body: String, method: Method, lock_obj: LockObject) -> Self {
-        LockStrategy {
+        LockSender {
             body,
             method,
             lock_obj,
@@ -97,7 +97,7 @@ impl<T> LockStrategy<T> {
 }
 
 #[async_trait]
-impl<T> Request for LockStrategy<T>
+impl<T> Request for LockSender<T>
 where
     T: Response + TryFromAsync<reqwest::Response> + Sync + Send,
 {
@@ -112,7 +112,7 @@ where
     }
 }
 #[async_trait]
-impl<T> SendWith for LockStrategy<T>
+impl<T> SendWith for LockSender<T>
 where
     T: Response + TryFromAsync<reqwest::Response> + Sync + Send,
     Self: AsReq + Sync + Send,
@@ -138,7 +138,7 @@ where
         x
     }
 }
-pub struct CopyToSysStrategy<'a, T, U>
+pub struct CopyToSysSender<'a, T, U>
 where
     T: Source + Create + AsRef<T> + Send + Sync,
 {
@@ -146,13 +146,13 @@ where
     data: Option<U>,
     destination: Destination,
 }
-impl<'a, T, U> CopyToSysStrategy<'a, T, U>
+impl<'a, T, U> CopyToSysSender<'a, T, U>
 where
     T: Create + Source + AsMut<T> + AsRef<T> + Sync + Send,
     U: Response + TryFromAsync<reqwest::Response>,
 {
-    pub fn new(obj: &'a T, destination: Destination) -> CopyToSysStrategy<'a, T, U> {
-        CopyToSysStrategy {
+    pub fn new(obj: &'a T, destination: Destination) -> CopyToSysSender<'a, T, U> {
+        CopyToSysSender {
             obj,
             data: None,
             destination,
@@ -161,7 +161,7 @@ where
 }
 
 #[async_trait]
-impl<'a, T, U> SendWith for CopyToSysStrategy<'a, T, U>
+impl<'a, T, U> SendWith for CopyToSysSender<'a, T, U>
 where
     T: Source + Create + AsRef<T> + Sync + Send,
     U: Response + TryFromAsync<reqwest::Response>,
@@ -184,7 +184,7 @@ where
     }
 }
 
-pub struct CopyTabToSysStrategy<'a, T, U>
+pub struct CopyTabToSysSender<'a, T, U>
 where
     T: Details,
     U: Response + TryFromAsync<reqwest::Response>,
@@ -193,13 +193,13 @@ where
     data: Option<U>,
     destination: Destination,
 }
-impl<'a, T, U> CopyTabToSysStrategy<'a, T, U>
+impl<'a, T, U> CopyTabToSysSender<'a, T, U>
 where
     T: Details,
     U: Response + TryFromAsync<reqwest::Response>,
 {
-    pub fn new(obj: &'a T, destination: &Destination) -> CopyTabToSysStrategy<'a, T, U> {
-        CopyTabToSysStrategy {
+    pub fn new(obj: &'a T, destination: &Destination) -> CopyTabToSysSender<'a, T, U> {
+        CopyTabToSysSender {
             obj,
             data: None,
             destination: destination.clone(),
@@ -207,7 +207,7 @@ where
     }
 }
 #[async_trait]
-impl<'a, T, U> SendWith for CopyTabToSysStrategy<'a, T, U>
+impl<'a, T, U> SendWith for CopyTabToSysSender<'a, T, U>
 where
     T: Details + Sync + Send,
     U: Response + TryFromAsync<reqwest::Response>,

@@ -190,7 +190,7 @@ subcommands:
     - settings:
         args: 
         - default_sys:
-            about: set the default system to work within
+            about: set the default system giving the sys id eg. "ITK"
             short: s
             long: def-sys
             takes_value: true

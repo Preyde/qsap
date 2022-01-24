@@ -6,7 +6,7 @@ use crate::{
     net::{
         behavior::{CopyToSys, Details},
         request::{
-            strategy::{CopyTabToSysStrategy, DefaultStrategy},
+            strategy::{CopyTabToSysSender, DefaultSender},
             DefaultResponse, Response, Responses, TryFromAsync,
         },
         AdtError, SendWith,
@@ -103,7 +103,7 @@ impl Table {
         }
     }
     pub fn freestyle(sql: &str, rows: Option<u32>) -> Box<dyn SendWith> {
-        let x: DefaultStrategy<TableResponse> = DefaultStrategy::new(
+        let x: DefaultSender<TableResponse> = DefaultSender::new(
             sql.to_string(),
             format!(
                 "/sap/bc/adt/datapreview/freestyle?rowNumber={}",
@@ -131,8 +131,8 @@ impl Details for Table {
             self.tab_name
         );
 
-        let x: DefaultStrategy<DetailResponse> =
-            DefaultStrategy::new(body, String::from("/sap/bc/soap/rfc"), Method::POST);
+        let x: DefaultSender<DetailResponse> =
+            DefaultSender::new(body, String::from("/sap/bc/soap/rfc"), Method::POST);
         Box::new(x)
     }
     fn update_details(&self, dd02v: &Dd02v, dd09l: &Dd09l, dd03p: &DD03P_TAB) -> Box<dyn SendWith> {
@@ -158,15 +158,15 @@ impl Details for Table {
             quick_xml::se::to_string(dd03p).unwrap()
         );
 
-        let x: DefaultStrategy<DefaultResponse> =
-            DefaultStrategy::new(body, String::from("/sap/bc/soap/rfc"), Method::POST);
+        let x: DefaultSender<DefaultResponse> =
+            DefaultSender::new(body, String::from("/sap/bc/soap/rfc"), Method::POST);
         Box::new(x)
     }
 }
 
 impl CopyToSys for Table {
     fn copy_to_sys<'a>(&'a self, dest: &crate::net::Destination) -> Box<dyn SendWith + 'a> {
-        let x: CopyTabToSysStrategy<Table, DefaultResponse> = CopyTabToSysStrategy::new(self, dest);
+        let x: CopyTabToSysSender<Table, DefaultResponse> = CopyTabToSysSender::new(self, dest);
         Box::new(x)
     }
 }

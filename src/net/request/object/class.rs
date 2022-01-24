@@ -2,10 +2,10 @@ use reqwest::Method;
 
 use crate::net::{
     behavior::Create,
-    request::{strategy::DefaultStrategy, DefaultResponse, SendWith},
+    request::{strategy::DefaultSender, DefaultResponse, SendWith},
 };
 
-// use super::{strategy::DefaultStrategy, Create, DefaultResponse, SendWith};
+// use super::{strategy::DefaultSender, Create, DefaultResponse, SendWith};
 
 pub struct Class {
     name: String,
@@ -31,7 +31,7 @@ impl Class {
 
 impl Create for Class {
     fn create(&self) -> Box<dyn SendWith> {
-        let strategy: DefaultStrategy<DefaultResponse> = DefaultStrategy::new(
+        let strategy: DefaultSender<DefaultResponse> = DefaultSender::new(
             format!(
                 r#"<?xml version="1.0" encoding="UTF-8"?><class:abapClass xmlns:class="http://www.sap.com/adt/oo/classes" xmlns:adtcore="http://www.sap.com/adt/core" adtcore:description="xxx" adtcore:language="DE" adtcore:name="{class_name}" adtcore:type="CLAS/OC" adtcore:masterLanguage="DE" adtcore:masterSystem="ITK" adtcore:responsible="PFRANK" class:final="true" class:visibility="public">
     
